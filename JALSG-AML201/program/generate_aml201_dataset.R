@@ -1,13 +1,15 @@
 # Constant
-kStudyId <- "AML201"
+kStudyId <- "JALSG-AML201"
 
 # Load data
+setwd(kStudyId)
 setwd("./input/rawdata")
-rawdata <- read.csv("AML201_161209.csv", as.is = T, fileEncoding = 'CP932')
+filenames <- list.files()
+rawdata <- read.csv(filenames[1], as.is = T, fileEncoding = 'CP932')
 setwd("../..")
 
 # Format data
-dm <- data.frame("STUDYID" = rep(kStudyId, nrow(rawdata)))
+dm <- data.frame(STUDYID = rep(kStudyId, nrow(rawdata)))
 dm$DOMAIN <- "DM"
 dm$USUBJID <- paste(kStudyId, rawdata$検体ID, sep = "-")
 dm$SUBJID <- rawdata$検体ID
@@ -19,9 +21,9 @@ dm$RFSTDTC <- ""
 
 # Save datasets
 setwd("./output")
-write.csv(dm, "DM.csv", row.names = T)
-# write.csv(ds, "DS.csv", row.names = T)
-# write.csv(mh, "MH.csv", row.names = T)
-# write.csv(rs, "RS.csv", row.names = T)
-# write.csv(sc, "SC.csv", row.names = T)
-setwd("..")
+write.csv(dm, "DM.csv", row.names = F)
+# write.csv(ds, "DS.csv", row.names = F)
+# write.csv(mh, "MH.csv", row.names = F)
+# write.csv(rs, "RS.csv", row.names = F)
+# write.csv(sc, "SC.csv", row.names = F)
+setwd("../..")
