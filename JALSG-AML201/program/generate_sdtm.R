@@ -35,12 +35,12 @@ for (i in 1:nrow(dataset)) {
 # dm$COUNTRY <-
 # dm$RFXSTDTC <-
 # dm$RFICDTC <-
-# ce$STUDYID <-
+ce <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
 # ce$DOMAIN <-
 # ce$USUBJID <-
 # ce$CESEQ <-
 # ce$CETERM <-
-# ce$CEDECOD <-
+ce$CEDECOD <- ifelse(dataset$再発の有無 == "再発", "RELAPSE", NA)
 # ce$CESTDTC <-
 # ds$STUDYID <-
 # ds$DOMAIN <-
@@ -82,6 +82,7 @@ for (i in 1:nrow(dataset)) {
 # Save datasets
 setwd("./output/SDTM")
 write.csv(dm, "DM.csv", row.names = F, na = "")
+write.csv(ce, "CE.csv", row.names = F, na = "")
 # write.csv(ds, "DS.csv", row.names = F, na = "")
 # write.csv(mh, "MH.csv", row.names = F, na = "")
 # write.csv(rs, "RS.csv", row.names = F, na = "")
