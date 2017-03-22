@@ -5,32 +5,30 @@ kStudyId <- "JALSG-AML201"
 setwd(kStudyId)
 setwd("./input/rawdata")
 filenames <- list.files()
-rawdata <- read.csv(filenames[1], as.is = T, fileEncoding = "CP932")
+rawdata <- read.csv(filenames[1], as.is = T, na.strings = c(""), fileEncoding = "CP932")
 setwd("../..")
 
 # Format data
-dm <- data.frame(STUDYID = rep(kStudyId, nrow(rawdata)))
+dataset <- rawdata[!is.na(rawdata$検体ID), ]
+dm <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
 dm$DOMAIN <- "DM"
-dm$USUBJID <- paste(kStudyId, rawdata$検体ID, sep = "-")
-dm$SUBJID <- rawdata$検体ID
+dm$USUBJID <- paste(kStudyId, dataset$検体ID, sep = "-")
+dm$SUBJID <- dataset$検体ID
 dm$RFSTDTC <- NA
 # TODO(ohtsuka): 変数の順番に処理して加えていって下さい。GoogleSpreadsheetで下記作りました。
 # dm$BRTHDTC <-
 # dm$AGE <-
 # dm$AGEU <-
 # dm$SEX <-
-
-for (i in nrow(rawdata)) {
-  # if (rawdata$寛解導入療法[i] == "") {
-  #   rawdata$ARMCD[i] <- "SCRNFAIL"
-  # } else if (rawdata$地固め療法群[i] == "") {
-  #   rawdata$ARMCD[i] <- "INDFAIL"
-  # } else {
-    rawdata$ARMCD[i] <- paste(substr(rawdata$寛解導入療法[i], 1, 1), substr(rawdata$地固め療法群[i], 1, 1), sep = "-")
-  # }
+for (i in 1:nrow(dataset)) {
+  if (is.na(dataset$寛解導入療法[i])) {
+    dm$ARMCD[i] <- "SCRNFAIL"
+  } else if (is.na(dataset$地固め療法群[i])) {
+    dm$ARMCD[i] <- "INDFAIL"
+  } else {
+    dm$ARMCD[i] <- paste(substr(dataset$寛解導入療法[i], 1, 1), substr(dataset$地固め療法群[i], 1, 1), sep = "-")
+  }
 }
-dm$ARMCD <- rawdata$ARMCD
-
 # dm$ARM <-
 # dm$ACTARMCD <-
 # dm$ACTARM <-
@@ -80,7 +78,6 @@ dm$ARMCD <- rawdata$ARMCD
 # rs$RSCAT <-
 # rs$RSORRES  <-
 # rs$RSSTRESC <-
-# TODO(ohtsuka): 他のドメインについても同様に処理をして下さい
 
 # Save datasets
 setwd("./output/SDTM")
