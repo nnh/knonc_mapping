@@ -20,15 +20,9 @@ dm$RFSTDTC <- NA
 # dm$AGE <-
 # dm$AGEU <-
 # dm$SEX <-
-for (i in 1:nrow(dataset)) {
-  if (is.na(dataset$寛解導入療法[i])) {
-    dm$ARMCD[i] <- "SCRNFAIL"
-  } else if (is.na(dataset$地固め療法群[i])) {
-    dm$ARMCD[i] <- "INDFAIL"
-  } else {
-    dm$ARMCD[i] <- paste(substr(dataset$寛解導入療法[i], 1, 1), substr(dataset$地固め療法群[i], 1, 1), sep = "-")
-  }
-}
+dm$ARMCD <- ifelse(is.na(dataset$寛解導入療法), "SCRNFAIL",
+            ifelse(is.na(dataset$地固め療法群), "INDFAIL",
+              paste(substr(dataset$寛解導入療法, 1, 1), substr(dataset$地固め療法群, 1, 1), sep = "-")))
 # dm$ARM <-
 # dm$ACTARMCD <-
 # dm$ACTARM <-
