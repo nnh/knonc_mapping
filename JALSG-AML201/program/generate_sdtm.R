@@ -16,14 +16,16 @@ dm$USUBJID <- paste(kStudyId, dataset$検体ID, sep = "-")
 dm$SUBJID <- dataset$検体ID
 dm$RFSTDTC <- NA
 # TODO(ohtsuka): 変数の順番に処理して加えていって下さい。GoogleSpreadsheetで下記作りました。
-# dm$BRTHDTC <-
-# dm$AGE <-
-# dm$AGEU <-
-# dm$SEX <-
+dm$BRTHDTC <- NULL
+dm$AGE <- dataset$Age
+dm$AGEU <- "YEARS"
+dm$SEX <- NULL
 dm$ARMCD <- ifelse(is.na(dataset$寛解導入療法), "SCRNFAIL",
             ifelse(is.na(dataset$地固め療法群), "INDFAIL",
               paste(substr(dataset$寛解導入療法, 1, 1), substr(dataset$地固め療法群, 1, 1), sep = "-")))
-# dm$ARM <-
+dm$ARM <- ifelse(is.na(dataset$寛解導入療法), "Screen Failure",
+                 ifelse(is.na(dataset$地固め療法群), "Induction Failure",
+                        paste(gsub("群", "", dataset$寛解導入療法), gsub("群", "", dataset$地固め療法群), sep = "-")))
 # dm$ACTARMCD <-
 # dm$ACTARM <-
 # dm$COUNTRY <-
