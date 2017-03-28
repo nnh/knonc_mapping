@@ -26,18 +26,20 @@ dm$ARMCD <- ifelse(is.na(dataset$寛解導入療法), "SCRNFAIL",
 dm$ARM <- ifelse(is.na(dataset$寛解導入療法), "Screen Failure",
                  ifelse(is.na(dataset$地固め療法群), "Induction Failure",
                         paste(gsub("群", "", dataset$寛解導入療法), gsub("群", "", dataset$地固め療法群), sep = "-")))
-# dm$ACTARMCD <-
-# dm$ACTARM <-
-# dm$COUNTRY <-
-# dm$RFXSTDTC <-
-# dm$RFICDTC <-
+dm$ACTARMCD <- dataset$ARMCD
+dm$ACTARM <- dataset$ARM
+dm$COUNTRY <- "JPN"
+dm$RFXSTDTC <- dataset$治療開始日
+dm$RFICDTC <- NULL
 ce <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
-# ce$DOMAIN <-
-# ce$USUBJID <-
-# ce$CESEQ <-
-# ce$CETERM <-
+ce$DOMAIN <- "CE"
+# -!- CE.SUBJIDが不明、要確認 このコメントは後で削除
+ce$USUBJID <-  paste(kStudyId, dataset$検体ID, sep = "-")
+# SEQ increment
+ce$CESEQ <- seq(1, nrow(ce), 1)
+ce$CETERM <- "CEDECOD"
 ce$CEDECOD <- ifelse(dataset$再発の有無 == "再発", "RELAPSE", NA)
-# ce$CESTDTC <-
+ce$CESTDTC <- ifelse(dataset$再発の有無 == "再発", dataset$再発日, NA)
 # ds$STUDYID <-
 # ds$DOMAIN <-
 # ds$USUBJID <-
