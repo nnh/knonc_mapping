@@ -1,0 +1,195 @@
+**********************************************************************;
+* Project           : JACLS-ALL02
+*
+* Program name      : JACLS-ALL02_SDTM_DS.sas
+*
+* Author            : MATSUO YAMAMOTO
+*
+* Date created      : 20170330
+*
+* Purpose           : Create DS DataSet
+*
+* Revision History  : 
+*
+* Date        Author           Ref    Revision (Date in YYYYMMDD format)
+* 
+*
+**********************************************************************;
+
+/*** Initial setting ***/
+%MACRO CURRENT_DIR;
+
+    %LOCAL _FULLPATH _PATH;
+    %LET   _FULLPATH = ;
+    %LET   _PATH     = ;
+
+    %IF %LENGTH(%SYSFUNC(GETOPTION(SYSIN))) = 0 %THEN
+        %LET _FULLPATH = %SYSGET(SAS_EXECFILEPATH);
+    %ELSE
+        %LET _FULLPATH = %SYSFUNC(GETOPTION(SYSIN));
+
+    %LET _PATH = %SUBSTR(   &_FULLPATH., 1, %LENGTH(&_FULLPATH.)
+                          - %LENGTH(%SCAN(&_FULLPATH.,-1,'\')) -1 );
+
+    &_PATH.
+
+%MEND CURRENT_DIR;
+
+%LET _PATH2 = %CURRENT_DIR;
+%LET FILE = ds;
+
+%INCLUDE "&_PATH2.\JACLS-ALL02_SDTM_LIBNAME.sas";
+
+/*** CSV read ***/
+PROC IMPORT OUT= MAIN
+  DATAFILE="&RAW.\ALL-02_OSEFSdata v1.csv"
+  DBMS=CSV REPLACE;
+  GETNAMES=NO;
+  DATAROW=1;
+  GUESSINGROWS=5000; 
+RUN; 
+
+/*** Extraction of mapping target ***/
+DATA  WK01;
+  SET  MAIN;
+  IF  VAR1 = "0"; ***Eligibility only ;
+RUN ;
+
+/*** Mapping ***/
+DATA  WK02;
+  LENGTH DSTERM DSDECOD $200.;
+  SET  WK01;
+  STUDYID = "JACLS-ALL02";
+  DOMAIN = "DS";
+  USUBJID = COMPRESS(STUDYID)||"-"||COMPRESS(PUT(VAR3,Z4.));
+  IF  VAR22 = "Š®—¹" THEN DO; 
+    DSTERM = "COMPLETED";
+    DSDECOD = "COMPLETED";
+    DSSTDTC = PUT(VAR30,IS8601DA.);
+  END;
+  ELSE DELETE;
+RUN ;
+
+DATA  WK03;
+  LENGTH DSTERM DSDECOD $200.;
+  SET  WK01;
+  STUDYID = "JACLS-ALL02";
+  DOMAIN = "DS";
+  USUBJID = COMPRESS(STUDYID)||"-"||COMPRESS(PUT(VAR3,Z4.));
+  IF  KINDEX(VAR27,"—LŠQŽ–Û‚Ì‚½‚ß")>0 THEN DO;
+    DSTERM = "ADVERSE EVENT";
+    DSDECOD = "ADVERSE EVENT";
+    DSSTDTC = PUT(VAR26,IS8601DA.);
+  END ; 
+  ELSE DELETE;
+RUN ;
+
+DATA  WK04;
+  LENGTH DSTERM DSDECOD $200.;
+  SET  WK01;
+  STUDYID = "JACLS-ALL02";
+  DOMAIN = "DS";
+  USUBJID = COMPRESS(STUDYID)||"-"||COMPRESS(PUT(VAR3,Z4.));
+  IF  KINDEX(VAR27,"Ž€–S")>0 THEN DO;
+    DSTERM = "DEATH";
+    DSDECOD = "DEATH";
+    DSSTDTC = PUT(VAR38,IS8601DA.);
+  END ; 
+  ELSE DELETE;
+RUN ;
+
+DATA  WK05;
+  LENGTH DSTERM DSDECOD $200.;
+  SET  WK01;
+  STUDYID = "JACLS-ALL02";
+  DOMAIN = "DS";
+  USUBJID = COMPRESS(STUDYID)||"-"||COMPRESS(PUT(VAR3,Z4.));
+  IF  KINDEX(VAR27,"ƒvƒƒgƒR[ƒ‹ˆá”½")>0 OR KINDEX(VAR27,"•s“KŠi«")>0 THEN DO;
+    DSTERM = "PROTOCOL DEVIATION";
+    DSDECOD = "PROTOCOL DEVIATION";
+    DSSTDTC = PUT(VAR26,IS8601DA.);
+  END ; 
+  ELSE DELETE;
+RUN ;
+
+DATA  WK06;
+  LENGTH DSTERM DSDECOD $200.;
+  SET  WK01;
+  STUDYID = "JACLS-ALL02";
+  DOMAIN = "DS";
+  USUBJID = COMPRESS(STUDYID)||"-"||COMPRESS(PUT(VAR3,Z4.));
+  IF  KINDEX(VAR27,"’S“–ˆã‚É‚æ‚è’†Ž~")>0 THEN DO;
+    DSTERM = "PHYSICIAN DECISION";
+    DSDECOD = "PHYSICIAN DECISION";
+    DSSTDTC = PUT(VAR26,IS8601DA.);
+  END ; 
+  ELSE DELETE;
+RUN ;
+
+DATA  WK07;
+  LENGTH DSTERM DSDECOD $200.;
+  SET  WK01;
+  STUDYID = "JACLS-ALL02";
+  DOMAIN = "DS";
+  USUBJID = COMPRESS(STUDYID)||"-"||COMPRESS(PUT(VAR3,Z4.));
+  IF  KINDEX(VAR27,"Ž¡—ÃƒŠƒXƒNFŒQ")>0 THEN DO;
+    DSTERM = "PHYSICIAN DECISION";
+    DSDECOD = "PHYSICIAN DECISION";
+    DSSTDTC = PUT(VAR26,IS8601DA.);
+  END ; 
+  ELSE DELETE;
+RUN ;
+
+DATA  WK08;
+  LENGTH DSTERM DSDECOD $200.;
+  MERGE  WK01(IN=A)
+         WK02-WK07(IN=B KEEP=VAR3);
+  BY VAR3;
+  IF B=0;
+  STUDYID = "JACLS-ALL02";
+  DOMAIN = "DS";
+  USUBJID = COMPRESS(STUDYID)||"-"||COMPRESS(PUT(VAR3,Z4.));
+  DSTERM = "OTHER";
+  DSDECOD = "OTHER";
+  DSSTDTC = PUT(VAR26,IS8601DA.);
+RUN ;
+
+DATA  WK21;
+  SET  WK02-WK08;
+  DSCAT = "DISPOSITION EVENT";
+  DROP VAR:;
+RUN ;
+
+PROC SORT DATA=WK21 ;BY USUBJID DSSTDTC; RUN ;
+
+DATA  WK20;
+  SET  WK21;
+  RETAIN DSSEQ;
+  BY  USUBJID;
+  IF FIRST.USUBJID = 1 THEN DSSEQ = 0;
+  DSSEQ = DSSEQ + 1;
+RUN ;
+
+PROC SQL ;
+   CREATE TABLE LIBSDTM.&FILE AS
+   SELECT
+    STUDYID  LENGTH=20    LABEL="Study Identifier",
+    DOMAIN  LENGTH=2    LABEL="Domain Abbreviation",
+    USUBJID  LENGTH=40    LABEL="Unique Subject Identifier",
+    DSSEQ      LABEL="Sequence Number",
+    DSTERM  LENGTH=200    LABEL="Reported Term for the Disposition Event",
+    DSDECOD  LENGTH=200    LABEL="Standardized Disposition Term",
+    DSCAT  LENGTH=40    LABEL="Category for Disposition Event",
+    DSSTDTC  LENGTH=19    LABEL="Start Date/Time of Disposition Event"
+   FROM WK20;
+QUIT ;
+
+FILENAME OUTF "&OUTPUT.\&FILE..csv" ;
+
+PROC EXPORT DATA=LIBSDTM.&FILE. OUTFILE=OUTF 
+  DBMS=CSV REPLACE;
+RUN ;
+
+%SDTM_FIN;
+
+/*** END ***/
