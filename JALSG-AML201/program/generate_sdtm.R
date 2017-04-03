@@ -15,17 +15,16 @@ dm$DOMAIN <- "DM"
 dm$USUBJID <- paste(kStudyId, dataset$検体ID, sep = "-")
 dm$SUBJID <- dataset$検体ID
 dm$RFSTDTC <- NA
-# TODO(ohtsuka): 変数の順番に処理して加えていって下さい。GoogleSpreadsheetで下記作りました。
-dm$BRTHDTC <- NULL
+dm$BRTHDTC <- NULL  # TODO(ohtsuka): NULLだと列ごと削除されると思います。空値の列を作るならNAかと。
 dm$AGE <- dataset$Age
 dm$AGEU <- "YEARS"
-dm$SEX <- NULL
+dm$SEX <- NULL  #TODO(ohtsuka): Required変数なので削除はまずいかと。
 dm$ARMCD <- ifelse(is.na(dataset$寛解導入療法), "SCRNFAIL",
             ifelse(is.na(dataset$地固め療法群), "INDFAIL",
               paste(substr(dataset$寛解導入療法, 1, 1), substr(dataset$地固め療法群, 1, 1), sep = "-")))
 dm$ARM <- ifelse(is.na(dataset$寛解導入療法), "Screen Failure",
-                 ifelse(is.na(dataset$地固め療法群), "Induction Failure",
-                        paste(gsub("群", "", dataset$寛解導入療法), gsub("群", "", dataset$地固め療法群), sep = "-")))
+          ifelse(is.na(dataset$地固め療法群), "Induction Failure",
+            chartr("（", ":", paste(gsub("）群", "", dataset$寛解導入療法), gsub("）群", "", dataset$地固め療法群), sep = "-"))))
 dm$ACTARMCD <- dataset$ARMCD
 dm$ACTARM <- dataset$ARM
 dm$COUNTRY <- "JPN"
@@ -33,12 +32,18 @@ dm$RFXSTDTC <- dataset$治療開始日
 dm$RFICDTC <- NULL
 ce <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
 ce$DOMAIN <- "CE"
-# -!- CE.SUBJIDが不明、要確認 このコメントは後で削除
+# TODO(ohtsuka): CE.SUBJIDが不明、要確認
 ce$USUBJID <-  paste(kStudyId, dataset$検体ID, sep = "-")
-# SEQ increment
-ce$CESEQ <- seq(1, nrow(ce), 1)
-ce$CETERM <- "CEDECOD"
-ce$CEDECOD <- ifelse(dataset$再発の有無 == "再発", "RELAPSE", NA)
+ce$CESEQ <- NA  # まずカラムを作成しておかないとエラーになる
+for (i in unique(ce$USUBJID)) {
+  ce[ce$USUBJID == i, ]$CESEQ <- c(1:nrow(ce[ce$USUBJID == i, ]))
+}
+ce$CETERM <- ifelse(is.na(dataset$再発の有無), "",  # NAはCESEQ確認の論理式でおかしな動きをするので取り除きました。
+             ifelse(dataset$再発の有無 == "再発", "RELAPSE", ""))
+ce$CEDECOD <- ce$CETERM
+# for (i in unique(ce$CEDECOD)) {  # USUBJIDだとCESEQが全て1になってしまいますので、CEDECODで行ってみました。
+#   ce[ce$CEDECOD == i, ]$CESEQ <- c(1:nrow(ce[ce$CEDECOD == i, ]))
+# }
 ce$CESTDTC <- ifelse(dataset$再発の有無 == "再発", dataset$再発日, NA)
 # ds$STUDYID <-
 # ds$DOMAIN <-
