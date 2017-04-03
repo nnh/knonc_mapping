@@ -3,7 +3,7 @@
 *
 * Program name      : JACLS-ALL02_SDTM_CE.sas
 *
-* Author            : MATSUO YAMAMOTO
+* Author            : MATSUO YAMAMOTO(éRñ{ èºóY)
 *
 * Date created      : 20170330
 *
