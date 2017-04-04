@@ -3,7 +3,7 @@
 *
 * Program name      : JACLS-ALL02_SDTM_CE.sas
 *
-* Author            : MATSUO YAMAMOTO(ŽR–{¼—Y)
+* Author            : MATSUO YAMAMOTO
 *
 * Date created      : 20170330
 *
@@ -65,7 +65,7 @@ DATA  WK02;
   IF  KINDEX(VAR27,"Ä”­")>0 THEN DO;
     CETERM = "DISEASE RELAPSE";
     CEDECOD = "DISEASE RELAPSE";
-    CESTDTC = PUT(VAR34,IS8601DA.);
+    CEDTC = PUT(VAR34,IS8601DA.);
   END ;
   ELSE DELETE;
 RUN ;
@@ -79,7 +79,7 @@ DATA  WK03;
   IF  ^MISSING(VAR36) THEN DO;
     CETERM = "SECONDARY CANCER";
     CEDECOD = "SECONDARY CANCER";
-    CESTDTC = PUT(VAR36,IS8601DA.);
+    CEDTC = PUT(VAR36,IS8601DA.);
   END ;
   ELSE DELETE;
 RUN ;
@@ -89,7 +89,7 @@ DATA  WK21;
   DROP VAR:;
 RUN ;
 
-PROC SORT DATA=WK21 ;BY USUBJID CESTDTC; RUN ;
+PROC SORT DATA=WK21 ;BY USUBJID CEDTC; RUN ;
 
 DATA  WK20;
   SET  WK21;
@@ -108,7 +108,7 @@ PROC SQL ;
     CESEQ      LABEL="Sequence Number",
     CETERM  LENGTH=200    LABEL="Reported Term for the Clinical Event",
     CEDECOD  LENGTH=200    LABEL="Standardized Clinical Term",
-    CESTDTC  LENGTH=19    LABEL="Start Date/Time of Clinical Event"
+    CEDTC  LENGTH=19    LABEL="Date/Time of Event Collection"
    FROM WK20;
 QUIT ;
 
