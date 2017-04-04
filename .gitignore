@@ -2,6 +2,7 @@
 ### Added by Tosh ###
 output/
 rawdata/
+log/
 *.html
 *.docx
 *.pdf
