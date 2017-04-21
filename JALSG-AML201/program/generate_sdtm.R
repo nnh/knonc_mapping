@@ -78,45 +78,60 @@ ds <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
 ds$DOMAIN <- "DS"
 ds$USUBJID <- paste(kStudyId, dataset$検体ID, sep = "-")
 ds$DSSEQ <- NA
-# ds$DSTERM <-
-# ds$DSDECOD <-
-# ds$DSCAT <-
-# ds$DSSTDTC <-
-# mh$STUDYID <-
-# mh$DOMAIN <-
-# mh$USUBJID <-
-# mh$MHSEQ <-
-# mh$MHCAT <-
-# mh$MHTERM <-
-# mh$MHDECOD <-
-# mh$MHSTDTC <-
-# mh$MHPTCD <-
-# mh$MHSOC <-
-# mh$MHSOCCD <-
-# sc$STUDYID <-
-# sc$DOMAIN <-
-# sc$USUBJID <-
-# sc$SCSEQ <-
-# sc$SCTESTCD <-
-# sc$SCTEST <-
-# sc$SCORRES <-
-# sc$SCSTRESC <-
-# rs$STUDYID <-
-# rs$DOMAIN <-
-# rs$USUBJID <-
-# rs$RSSEQ <-
-# rs$RSTESTCD <-
-# rs$RSTEST <-
-# rs$RSCAT <-
-# rs$RSORRES  <-
-# rs$RSSTRESC <-
+ds$DSTERM <- ifelse(!is.na(dataset$最終生存確認日), "COMPLETED",
+             ifelse(!is.na(dataset$死亡日), "DEATH",
+               "OTHER"))
+ds$DSDECOD <- ds$DSTERM
+ds$DSCAT <- "DISPOSITION EVENT"
+ds$DSSTDTC <- ifelse(!is.na(dataset$最終生存確認日), dataset$最終生存確認日,
+              ifelse(!is.na(dataset$死亡日), dataset$死亡日,
+                dataset$最終予後日))
+# Sort(asc) KEY=USUBJID,DSTERM,DSSTDTC
+dssortlist <- order(ds$USUBJID, ds$DSTERM, ds$DSSTDTC)
+ds <- ds[dssortlist,]
+# Set DSSEQ  Serial number for each USUBJID
+ds$DSSEQ = SetSEQ(ds, "USUBJID", "DSSEQ")
+
+# ####### MH #######  
+mh <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
+mh$DOMAIN <- "MH"
+mh$USUBJID <- paste(kStudyId, dataset$検体ID, sep = "-")
+mh$MHSEQ <- NA
+mh$MHCAT <- "PRIMARY DIAGNOSIS"
+mh$MHTERM <- "急性骨髄性白血病"
+mh$MHDECOD <- mh$MHTERM
+mh$MHSTDTC <- NA
+mh$MHPTCD <- "20058373"
+mh$MHSOC <- mh$MHTERM
+mh$MHSOCCD <- "C92.0"
+# Sort(asc) KEY=USUBJID  *MHTERM,MHSTDTC -> constant
+mhsortlist <- order(mh$USUBJID)
+mh <- mh[mhsortlist,]
+# Set MHSEQ  Serial number for each USUBJID
+mh$MHSEQ = SetSEQ(mh, "USUBJID", "MHSEQ")
+
+# ####### RS #######  
+rs <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
+rs$DOMAIN <- "RS"
+rs$USUBJID <- paste(kStudyId, dataset$検体ID, sep = "-")
+rs$RSSEQ <- NA
+rs$RSTESTCD <- "CLINRESP"
+rs$RSTEST <- "Clinical Response"
+rs$RSCAT <- "DEFINED BY PROTOCOL"
+rs$RSORRES <- ifelse(dataset$CR == "CR", "CR",
+              ifelse(dataset$CR == "non-CR", "NR", "NE"))
+rs$RSSTRESC <- rs$RSORRES
+# Sort(asc) KEY=USUBJID  
+rssortlist <- order(rs$USUBJID)
+rs <- rs[rssortlist,]
+# Set RSSEQ  Serial number for each USUBJID
+rs$RSSEQ = SetSEQ(rs, "USUBJID", "RSSEQ")
 
 # Save datasets
 setwd("./output/SDTM")
 write.csv(dm, "dm.csv", row.names = F, na = "")
 write.csv(ce, "ce.csv", row.names = F, na = "")
 write.csv(ds, "ds.csv", row.names = F, na = "")
-# write.csv(mh, "MH.csv", row.names = F, na = "")
-# write.csv(rs, "RS.csv", row.names = F, na = "")
-# write.csv(sc, "SC.csv", row.names = F, na = "")
+write.csv(mh, "mh.csv", row.names = F, na = "")
+write.csv(rs, "rs.csv", row.names = F, na = "")
 setwd("../../..")
