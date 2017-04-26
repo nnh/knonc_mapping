@@ -57,7 +57,7 @@ dm <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
 dm$DOMAIN <- "DM" 
 dm$USUBJID <- paste(kStudyId, dataset$検体ID, sep = "-")
 dm$SUBJID <- dataset$検体ID
-dm$RFSTDTC <- dataset$登録日
+dm$RFSTDTC <- as.character(as.Date(dataset$登録日))  # ISO8601format
 dm$BRTHDTC <- NA
 dm$AGE <- dataset$Age
 dm$AGEU <- "YEARS"
@@ -71,7 +71,7 @@ dm$ARM <- ifelse(is.na(dataset$寛解導入療法), "Screen Failure",
 dm$ACTARMCD <- dm$ARMCD
 dm$ACTARM <- dm$ARM
 dm$COUNTRY <- "JPN"
-dm$RFXSTDTC <- dataset$治療開始日
+dm$RFXSTDTC <- as.character(as.Date(dataset$治療開始日))  # ISO8601format
 dm$RFICDTC <- NA
 
 # ####### CE #######  
@@ -100,9 +100,10 @@ ds$DSTERM <- ifelse(!is.na(dataset$最終生存確認日), "COMPLETED",
                "OTHER"))
 ds$DSDECOD <- ds$DSTERM
 ds$DSCAT <- "DISPOSITION EVENT"
-ds$DSSTDTC <- ifelse(!is.na(dataset$最終生存確認日), dataset$最終生存確認日,
+wk.dsstdtc <- ifelse(!is.na(dataset$最終生存確認日), dataset$最終生存確認日,
               ifelse(!is.na(dataset$死亡日), dataset$死亡日,
                 dataset$最終予後日))
+ds$DSSTDTC <- as.character(as.Date(wk.dsstdtc))  # ISO8601format
 # Sort(asc) KEY=USUBJID,DSTERM,DSSTDTC
 dssortlist <- order(ds$USUBJID, ds$DSTERM, ds$DSSTDTC)
 ds <- ds[dssortlist,]
@@ -118,7 +119,7 @@ mh$MHCAT <- "PRIMARY DIAGNOSIS"
 mh$MHTERM <- "急性骨髄性白血病"
 mh$MHDECOD <- mh$MHTERM
 mh$MHSTDTC <- NA
-mh$MHPTCD <- "20058373"
+mh$MHPTCD <- 20058373
 mh$MHSOC <- mh$MHTERM
 mh$MHSOCCD <- "C92.0"
 # Sort(asc) KEY=USUBJID  *MHTERM,MHSTDTC -> constant
