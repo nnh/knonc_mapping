@@ -57,7 +57,7 @@ dm <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
 dm$DOMAIN <- "DM" 
 dm$USUBJID <- paste(kStudyId, dataset$検体ID, sep = "-")
 dm$SUBJID <- dataset$検体ID
-dm$RFSTDTC <- dataset$登録日
+dm$RFSTDTC <- as.Character(as.Date(dataset$登録日))
 dm$BRTHDTC <- NA
 dm$AGE <- dataset$Age
 dm$AGEU <- "YEARS"
