@@ -1,27 +1,46 @@
+# **********************************************************************;
+# * Project           : JALSG-AML201
+# *
+# * Program name      : generate_sdtm.R
+# *
+# * Author            : MARIKO OHTSUKA
+# *
+# * Date created      : 20170318
+# *
+# * Purpose           : Generate SDTM DataSet
+# *
+# * Revision History  : 
+# *
+# * Date        Author           Ref    Revision (Date in YYYYMMDD format)
+# * 
+# *
+# **********************************************************************;
 # function
-# ################################## # 
-# SetSEQ function                    #
-# Serial number for each Primary key #
-# Arguments : dst as dataset         #
-#             pkey as Primary key    #
-#             setclmnm as ColumnName #
-# Return : dst$setclmnm              #
-# ################################## # 
-SetSEQ <- function(dst, pkey, setclmnm) {
+# ############################################## # 
+# SetSEQ function                                #
+# Set Serial number for each Primary key         #
+# Arguments : dst is dataset                     #
+#             pkey is Primary key                #
+#             columnname is Column name to set   #
+#               key                              #
+# Return : dst$columnname                        #
+# ############################################## # 
+SetSEQ <- function(dst, pkey, columnname) {
   #Init
   cntseq = 0
-  svpkey <- ""
+  save.pkey <- ""
   
-  # If the keys are changes, add 1 to the key
+  # If the keys are changes, add 1
   for (i in 1:nrow(dst)) {
-    if (dst[i,pkey] != svpkey) {
+    if (dst[i,pkey] != save.pkey) {
       cntseq <- cntseq + 1
     }  
-    dst[i,setclmnm] <- cntseq
-    svpkey <- dst[i,pkey]
+    dst[i,columnname] <- cntseq
+    save.pkey <- dst[i,pkey]
   }
-  return(dst[,setclmnm])
+  return(dst[,columnname])
 }
+
 # Constant
 kStudyId <- "JALSG-AML201"
 
@@ -54,18 +73,16 @@ dm$ACTARM <- dm$ARM
 dm$COUNTRY <- "JPN"
 dm$RFXSTDTC <- dataset$治療開始日
 dm$RFICDTC <- NA
+
 # ####### CE #######  
 ce <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
 ce$DOMAIN <- "CE"
 # TODO(ohtsuka): CE.SUBJIDが不明、要確認
 ce$USUBJID <- paste(kStudyId, dataset$検体ID, sep = "-")
 ce$CESEQ <- NA
-ce$CETERM <- ifelse(is.na(dataset$再発の有無), "",  # NAはCESEQ確認の論理式でおかしな動きをするので取り除きました。
-             ifelse(dataset$再発の有無 == "再発", "RELAPSE", ""))
+ce$CETERM <- ifelse(is.na(dataset$再発の有無), "",  
+             ifelse(dataset$再発の有無 == "再発", "DISEASE RELAPSE", ""))
 ce$CEDECOD <- ce$CETERM
-# for (i in unique(ce$CEDECOD)) {  # USUBJIDだとCESEQが全て1になってしまいますので、CEDECODで行ってみました。
-#   ce[ce$CEDECOD == i, ]$CESEQ <- c(1:nrow(ce[ce$CEDECOD == i, ]))
-# }
 ce$CEDTC <- ifelse(dataset$再発の有無 == "再発", dataset$再発日, NA)
 # Sort(asc) KEY=USUBJID,CETERM,CEDTC
 ceSortlist <- order(ce$USUBJID, ce$CETERM, ce$CEDTC)
@@ -119,7 +136,7 @@ rs$RSTESTCD <- "CLINRESP"
 rs$RSTEST <- "Clinical Response"
 rs$RSCAT <- "DEFINED BY PROTOCOL"
 rs$RSORRES <- ifelse(dataset$CR == "CR", "CR",
-              ifelse(dataset$CR == "non-CR", "NR", "NE"))
+              ifelse(dataset$CR == "nonCR", "NR", "NE"))
 rs$RSSTRESC <- rs$RSORRES
 # Sort(asc) KEY=USUBJID  
 rssortlist <- order(rs$USUBJID)
