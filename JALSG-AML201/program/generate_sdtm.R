@@ -1,5 +1,5 @@
 # **********************************************************************;
-# * Project           : JALSG-AML201
+# * Project           : JALSG-AML201 
 # *
 # * Program name      : generate_sdtm.R
 # *
