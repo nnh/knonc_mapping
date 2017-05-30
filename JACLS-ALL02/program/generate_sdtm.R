@@ -152,7 +152,7 @@ SetCeCEDECOD <- function(dst) {
       # "date of SECONDARY CANCER" is not blank
       # : set "SECONDARY CANCER", "date of SECONDARY CANCER"
       cedecod <- "SECONDARY CANCER"
-      cedtc <- as.character(as.Date(wk.sec.ca))
+      cedtc <- ISO8601Date(wk.sec.ca)
     }
     
     if (!is.na(wk.discontinuing)) {
@@ -160,7 +160,7 @@ SetCeCEDECOD <- function(dst) {
         # "discontinuing" is "RELAPSE" 
         # : set "DISEASE RELAPSE", "date of relapse"
         cedecod <- "DISEASE RELAPSE"
-        cedtc <- as.character(as.Date(dst[i,"relapse.date"]))
+        cedtc <- ISO8601Date(dst[i,"relapse.date"])
       }
     }
 
@@ -251,9 +251,11 @@ setwd("../..")
 # Format data
 dataset <- rawdata[!is.na(rawdata[, 3]), ]
 # rawdataに列名がなかったのでセット,不要なら削除
+# Set columns name
 colnames(dataset) <- c("VAR1", "アーム間違い", "ALL02.No", "VAR4", "VAR5", "確定リスク", "寛解判定", "割付", "診断年月日", "診断時年齢", "VAR11", "性別", "VAR13", "VAR14", "induction.therapy開始日", "VAR16", "VAR17", "VAR18", "VAR19", "VAR20", "VAR21", "終了種別", "VAR23", "VAR24", "VAR25", "中止日", "中止理由", "VAR28", "VAR29", "最終確認日", "VAR31", "VAR32", "VAR33", "再発日", "VAR35", "二次がん日", "VAR37", "生死日", "VAR39", "VAR40", "VAR41", "VAR42", "VAR43", "VAR44", "VAR45", "VAR46", "VAR47", "VAR48", "VAR49", "VAR50", "VAR51", "VAR52", "VAR53", "VAR54", "VAR55", "VAR56", "VAR57", "VAR58", "VAR59")
 dm <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
 dm$DOMAIN <- "DM" 
+# Zero padding (4-digit) ex) 1->0001
 all02.No <- formatC(dataset$ALL02.No, width = 4, flag = "0")
 dm$USUBJID <- paste(kStudyId, all02.No, sep = "-")
 dm$SUBJID <- all02.No
