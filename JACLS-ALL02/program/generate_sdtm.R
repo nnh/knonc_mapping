@@ -278,7 +278,7 @@ dm$RFICDTC <- NA
 # ####### CE #######  
 ce <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
 ce$DOMAIN <- "CE"
-ce$USUBJID <- paste(kStudyId, dataset$検体ID, sep = "-")
+ce$USUBJID <- paste(kStudyId, all02.No, sep = "-")
 ce$CESEQ <- NA
 wk.ce <- data.frame(discontinuing=dataset$中止理由, sec.ca.date=dataset$二次がん日, relapse.date=dataset$再発日)
 wk.cedecod.T <- SetCeCEDECOD(wk.ce)
@@ -294,7 +294,7 @@ ce$CESEQ = SetSEQ(ce, "USUBJID", "CESEQ")
 # ####### DS #######  
 ds <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
 ds$DOMAIN <- "DS"
-ds$USUBJID <- paste(kStudyId, dataset$検体ID, sep = "-")
+ds$USUBJID <- paste(kStudyId, all02.No, sep = "-")
 ds$DSSEQ <- NA
 wk.ds <- data.frame(discontinuing=dataset$中止理由, endtype=dataset$終了種別, last.cfm.date=dataset$最終確認日, discontinuing.date=dataset$中止日, death.date=dataset$生死日)
 wk.dsdecod.T <- SetDsDSDECOD(wk.ds)
@@ -311,7 +311,7 @@ ds$DSSEQ = SetSEQ(ds, "USUBJID", "DSSEQ")
 # ####### MH #######  
 mh <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
 mh$DOMAIN <- "MH"
-mh$USUBJID <- paste(kStudyId, dataset$検体ID, sep = "-")
+mh$USUBJID <- paste(kStudyId, all02.No, sep = "-")
 mh$MHSEQ <- NA
 mh$MHCAT <- "PRIMARY DIAGNOSIS"
 mh$MHTERM <- "小児急性リンパ性白血病"
@@ -329,7 +329,7 @@ mh$MHSEQ = SetSEQ(mh, "USUBJID", "MHSEQ")
 # ####### SC #######  
 sc <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
 sc$DOMAIN <- "SC"
-sc$USUBJID <- paste(kStudyId, dataset$検体ID, sep = "-")
+sc$USUBJID <- paste(kStudyId, all02.No, sep = "-")
 sc$SCSEQ <- NA
 sc$SCTESTCD <- "DEFRISK"
 sc$SCTEST <- "Definite Risk"
@@ -344,7 +344,7 @@ sc$SCSEQ = SetSEQ(sc, "USUBJID", "SCSEQ")
 # ####### RS #######  
 rs <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
 rs$DOMAIN <- "RS"
-rs$USUBJID <- paste(kStudyId, dataset$検体ID, sep = "-")
+rs$USUBJID <- paste(kStudyId, all02.No, sep = "-")
 rs$RSSEQ <- NA
 rs$RSTESTCD <- "CLINRESP"
 rs$RSTEST <- "Clinical Response"
