@@ -263,8 +263,10 @@ dm$RFSTDTC <- NA
 dm$BRTHDTC <- NA
 dm$AGE <- dataset$診断時年齢
 dm$AGEU <- "YEARS"
-dm$SEX <- ifelse(dataset$性別 == 0, "M",
-          ifelse(dataset$性別 == 1, "F", "U"))
+wk.sex <- NA
+wk.sex <- ifelse(dataset$性別 == 0, "M",
+          ifelse(dataset$性別 == 1, "F", NA))
+dm$SEX <- ifelse(is.na(wk.sex), "U", wk.sex)
 wk.dm <- data.frame(risk=dataset$確定リスク, alloc=dataset$割付, arm.err=dataset$アーム間違い)
 wk.arm.T <- SetDmARMCD(wk.dm)
 dm$ARMCD <- wk.arm.T$armcd
@@ -349,8 +351,10 @@ rs$RSSEQ <- NA
 rs$RSTESTCD <- "CLINRESP"
 rs$RSTEST <- "Clinical Response"
 rs$RSCAT <- "DEFINED BY PROTOCOL"
-rs$RSORRES <- ifelse(dataset$寛解判定 == "有", "CR",
-              ifelse(dataset$寛解判定 == "無", "NR", "NE"))
+wk.RSORRES <- NA
+wk.RSORRES <- ifelse(dataset$寛解判定 == "有", "CR",
+              ifelse(dataset$寛解判定 == "無", "NR", NA))
+rs$RSORRES <- ifelse(is.na(wk.RSORRES), "NE", wk.RSORRES)
 rs$RSSTRESC <- rs$RSORRES
 # Sort(asc) KEY=USUBJID  
 rssortlist <- order(rs$USUBJID)
@@ -364,6 +368,7 @@ write.csv(dm, "dm.csv", row.names = F, na = "")
 write.csv(ce, "ce.csv", row.names = F, na = "")
 write.csv(ds, "ds.csv", row.names = F, na = "")
 write.csv(mh, "mh.csv", row.names = F, na = "")
+write.csv(sc, "sc.csv", row.names = F, na = "")
 write.csv(rs, "rs.csv", row.names = F, na = "")
 setwd("../../..")
 
