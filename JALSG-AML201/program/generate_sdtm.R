@@ -40,6 +40,15 @@ SetSEQ <- function(dst, pkey, columnname) {
   }
   return(dst[,columnname])
 }
+# ############################################## # 
+# ISO8601Date function                           #
+# YYYY/MM/DD -> YYYY-MM-DD                       #
+# Arguments : dte is Date                        #
+# Return :    Date(ISO8601format)                #
+# ############################################## # 
+ISO8601Date <- function(dte) {
+  return (as.character(as.Date(dte)))
+}
 
 # Constant
 kStudyId <- "JALSG-AML201"
@@ -57,7 +66,7 @@ dm <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
 dm$DOMAIN <- "DM" 
 dm$USUBJID <- paste(kStudyId, dataset$検体ID, sep = "-")
 dm$SUBJID <- dataset$検体ID
-dm$RFSTDTC <- as.character(as.Date(dataset$登録日))  # ISO8601format
+dm$RFSTDTC <- ISO8601Date(dataset$登録日)  # ISO8601format
 dm$BRTHDTC <- NA
 dm$AGE <- dataset$Age
 dm$AGEU <- "YEARS"
@@ -71,22 +80,23 @@ dm$ARM <- ifelse(is.na(dataset$寛解導入療法), "Screen Failure",
 dm$ACTARMCD <- dm$ARMCD
 dm$ACTARM <- dm$ARM
 dm$COUNTRY <- "JPN"
-dm$RFXSTDTC <- as.character(as.Date(dataset$治療開始日))  # ISO8601format
+dm$RFXSTDTC <- ISO8601Date(dataset$治療開始日)  # ISO8601format
 dm$RFICDTC <- NA
 
 # ####### CE #######  
 ce <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
 ce$DOMAIN <- "CE"
-# TODO(ohtsuka): CE.SUBJIDが不明、要確認
 ce$USUBJID <- paste(kStudyId, dataset$検体ID, sep = "-")
 ce$CESEQ <- NA
 ce$CETERM <- ifelse(is.na(dataset$再発の有無), "",  
              ifelse(dataset$再発の有無 == "再発", "DISEASE RELAPSE", ""))
 ce$CEDECOD <- ce$CETERM
-ce$CEDTC <- ifelse(dataset$再発の有無 == "再発", dataset$再発日, NA)
+ce$CEDTC <- ifelse(dataset$再発の有無 == "再発", ISO8601Date(dataset$再発日), NA)
 # Sort(asc) KEY=USUBJID,CETERM,CEDTC
 ceSortlist <- order(ce$USUBJID, ce$CETERM, ce$CEDTC)
-ce <- ce[ceSortlist,]
+wk.ce <- ce[ceSortlist,]
+# If CETERM is NA, don't output
+ce <- wk.ce[wk.ce$CETERM != "",]
 # Set CESEQ  Serial number for each USUBJID
 ce$CESEQ = SetSEQ(ce, "USUBJID", "CESEQ")
 
@@ -103,7 +113,7 @@ ds$DSCAT <- "DISPOSITION EVENT"
 wk.dsstdtc <- ifelse(!is.na(dataset$最終生存確認日), dataset$最終生存確認日,
               ifelse(!is.na(dataset$死亡日), dataset$死亡日,
                 dataset$最終予後日))
-ds$DSSTDTC <- as.character(as.Date(wk.dsstdtc))  # ISO8601format
+ds$DSSTDTC <- ISO8601Date(wk.dsstdtc)  # ISO8601format
 # Sort(asc) KEY=USUBJID,DSTERM,DSSTDTC
 dssortlist <- order(ds$USUBJID, ds$DSTERM, ds$DSSTDTC)
 ds <- ds[dssortlist,]
