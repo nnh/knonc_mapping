@@ -1,56 +1,38 @@
-# **********************************************************************;
-# * Project           : JALSG-AML201 
-# *
-# * Program name      : generate_sdtm.R
-# *
-# * Author            : MARIKO OHTSUKA
-# *
-# * Date created      : 20170318
-# *
-# * Purpose           : Generate SDTM DataSet
-# *
-# * Revision History  : 
-# *
-# * Date        Author           Ref    Revision (Date in YYYYMMDD format)
-# * 
-# *
-# **********************************************************************;
-# function
-# ############################################## # 
-# SetSEQ function                                #
-# Set Serial number for each Primary key         #
-# Arguments : dst is dataset                     #
-#             pkey is Primary key                #
-#             columnname is Column name to set   #
-#               key                              #
-# Return : dst$columnname                        #
-# ############################################## # 
+#' Set SEQ
+#' Set serial number for each primary key
+#'
+#' @param dst A dataset
+#' @param pkey A column name for primary key
+#' @param columnname A column name to set serial number
+#'
+#' @return A vector dest$colummnname
+#' @export
 SetSEQ <- function(dst, pkey, columnname) {
   #Init
-  cntseq = 0
+  cntseq <- 0
   save.pkey <- ""
-  
   # If the keys are changes, add 1
   for (i in 1:nrow(dst)) {
-    if (dst[i,pkey] != save.pkey) {
+    if (dst[i, pkey] != save.pkey) {
       cntseq <- cntseq + 1
-    }  
-    dst[i,columnname] <- cntseq
-    save.pkey <- dst[i,pkey]
+    }
+    dst[i, columnname] <- cntseq
+    save.pkey <- dst[i, pkey]
   }
-  return(dst[,columnname])
+  return(dst[, columnname])
 }
-# ############################################## # 
-# ISO8601Date function                           #
-# YYYY/MM/DD -> YYYY-MM-DD                       #
-# Arguments : dte is Date                        #
-# Return :    Date(ISO8601format)                #
-# ############################################## # 
+
+#' ISO8601Date function
+#' YYYY/MM/DD -> YYYY-MM-DD
+#'
+#' @param dte A date
+#'
+#' @return A vector of character
+#' @export
 ISO8601Date <- function(dte) {
   return (as.character(as.Date(dte)))
 }
 
-# Constant
 kStudyId <- "JALSG-AML201"
 
 # Load data
@@ -63,10 +45,10 @@ setwd("../..")
 # Format data
 dataset <- rawdata[!is.na(rawdata$検体ID), ]
 dm <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
-dm$DOMAIN <- "DM" 
+dm$DOMAIN <- "DM"
 dm$USUBJID <- paste(kStudyId, dataset$検体ID, sep = "-")
 dm$SUBJID <- dataset$検体ID
-dm$RFSTDTC <- ISO8601Date(dataset$登録日)  # ISO8601format
+dm$RFSTDTC <- ISO8601Date(dataset$登録日)
 dm$BRTHDTC <- NA
 dm$AGE <- dataset$Age
 dm$AGEU <- "YEARS"
@@ -80,27 +62,27 @@ dm$ARM <- ifelse(is.na(dataset$寛解導入療法), "Screen Failure",
 dm$ACTARMCD <- dm$ARMCD
 dm$ACTARM <- dm$ARM
 dm$COUNTRY <- "JPN"
-dm$RFXSTDTC <- ISO8601Date(dataset$治療開始日)  # ISO8601format
+dm$RFXSTDTC <- ISO8601Date(dataset$治療開始日)
 dm$RFICDTC <- NA
 
-# ####### CE #######  
+# ####### CE #######
 ce <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
 ce$DOMAIN <- "CE"
 ce$USUBJID <- paste(kStudyId, dataset$検体ID, sep = "-")
 ce$CESEQ <- NA
-ce$CETERM <- ifelse(is.na(dataset$再発の有無), "",  
+ce$CETERM <- ifelse(is.na(dataset$再発の有無), "",
              ifelse(dataset$再発の有無 == "再発", "DISEASE RELAPSE", ""))
 ce$CEDECOD <- ce$CETERM
 ce$CEDTC <- ifelse(dataset$再発の有無 == "再発", ISO8601Date(dataset$再発日), NA)
 # Sort(asc) KEY=USUBJID,CETERM,CEDTC
 ceSortlist <- order(ce$USUBJID, ce$CETERM, ce$CEDTC)
-wk.ce <- ce[ceSortlist,]
+wk.ce <- ce[ceSortlist, ]
 # If CETERM is NA, don't output
-ce <- wk.ce[wk.ce$CETERM != "",]
+ce <- wk.ce[wk.ce$CETERM != "", ]
 # Set CESEQ  Serial number for each USUBJID
-ce$CESEQ = SetSEQ(ce, "USUBJID", "CESEQ")
+ce$CESEQ <- SetSEQ(ce, "USUBJID", "CESEQ")
 
-# ####### DS #######  
+# ####### DS #######
 ds <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
 ds$DOMAIN <- "DS"
 ds$USUBJID <- paste(kStudyId, dataset$検体ID, sep = "-")
@@ -116,11 +98,11 @@ wk.dsstdtc <- ifelse(!is.na(dataset$最終生存確認日), dataset$最終生存
 ds$DSSTDTC <- ISO8601Date(wk.dsstdtc)  # ISO8601format
 # Sort(asc) KEY=USUBJID,DSTERM,DSSTDTC
 dssortlist <- order(ds$USUBJID, ds$DSTERM, ds$DSSTDTC)
-ds <- ds[dssortlist,]
+ds <- ds[dssortlist, ]
 # Set DSSEQ  Serial number for each USUBJID
-ds$DSSEQ = SetSEQ(ds, "USUBJID", "DSSEQ")
+ds$DSSEQ <- SetSEQ(ds, "USUBJID", "DSSEQ")
 
-# ####### MH #######  
+# ####### MH #######
 mh <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
 mh$DOMAIN <- "MH"
 mh$USUBJID <- paste(kStudyId, dataset$検体ID, sep = "-")
@@ -134,11 +116,11 @@ mh$MHSOC <- mh$MHTERM
 mh$MHSOCCD <- "C92.0"
 # Sort(asc) KEY=USUBJID  *MHTERM,MHSTDTC -> constant
 mhsortlist <- order(mh$USUBJID)
-mh <- mh[mhsortlist,]
+mh <- mh[mhsortlist, ]
 # Set MHSEQ  Serial number for each USUBJID
-mh$MHSEQ = SetSEQ(mh, "USUBJID", "MHSEQ")
+mh$MHSEQ <- SetSEQ(mh, "USUBJID", "MHSEQ")
 
-# ####### RS #######  
+# ####### RS #######
 rs <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
 rs$DOMAIN <- "RS"
 rs$USUBJID <- paste(kStudyId, dataset$検体ID, sep = "-")
@@ -149,11 +131,11 @@ rs$RSCAT <- "DEFINED BY PROTOCOL"
 rs$RSORRES <- ifelse(dataset$CR == "CR", "CR",
               ifelse(dataset$CR == "nonCR", "NR", "NE"))
 rs$RSSTRESC <- rs$RSORRES
-# Sort(asc) KEY=USUBJID  
+# Sort(asc) KEY=USUBJID
 rssortlist <- order(rs$USUBJID)
-rs <- rs[rssortlist,]
+rs <- rs[rssortlist, ]
 # Set RSSEQ  Serial number for each USUBJID
-rs$RSSEQ = SetSEQ(rs, "USUBJID", "RSSEQ")
+rs$RSSEQ <- SetSEQ(rs, "USUBJID", "RSSEQ")
 
 # Save datasets
 setwd("./output/SDTM")
