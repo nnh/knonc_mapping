@@ -1,6 +1,6 @@
 knonc_mapping
 =============
-Legacy data conversion programs for knowledge base for the hemato-oncology, "knonc".
+Legacy data conversion programs for the knowledge base for hemato-oncology, "knonc".
 
 [![MIT licensed][shield-license]](#)
 
