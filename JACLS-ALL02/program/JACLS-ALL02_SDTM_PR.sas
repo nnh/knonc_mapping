@@ -1,11 +1,11 @@
 **********************************************************************;
 * Project           : JACLS-ALL02
 *
-* Program name      : JACLS-ALL02_SDTM_RS.sas
+* Program name      : JACLS-ALL02_SDTM_PR.sas
 *
 * Author            : MATSUO YAMAMOTO
 *
-* Date created      : 20170330
+* Date created      : 20171130
 *
 * Purpose           : Create RS DataSet
 *
@@ -36,7 +36,7 @@
 %MEND CURRENT_DIR;
 
 %LET _PATH2 = %CURRENT_DIR;
-%LET FILE = rs;
+%LET FILE = pr;
 
 %INCLUDE "&_PATH2.\JACLS-ALL02_SDTM_LIBNAME.sas";
 
@@ -57,29 +57,31 @@ RUN ;
 
 /*** Mapping ***/
 DATA  WK02;
-  LENGTH RSORRES RSSTRESC $20.;
+  LENGTH PRCAT $40.;
   SET  WK01;
   STUDYID = "JACLS-ALL02";
-  DOMAIN = "RS";
+  DOMAIN = "PR";
   USUBJID = COMPRESS(STUDYID)||"-"||COMPRESS(PUT(VAR3,Z4.));
-  RSTESTCD = "INDCRESP";
-  RSTEST = "Induction Response";
-  RSCAT = "DEFINED BY PROTOCOL";
-  IF  VAR18 = "óL" THEN RSORRES = "CR";
-  ELSE IF VAR18 = "ñ≥" THEN RSORRES = "NR";
-  ELSE RSORRES = "NE";
-  RSSTRESC = COMPRESS(RSORRES);
-  RSDTC = "";
+  PRTRT = "Hematopoietic Stem Cell Transplantation";
+
+  IF ^MISSING(VAR24) THEN DO;
+    IF VAR24 in("R-BMT","Çq-ÇaÇlÇs","R-PBSCT")  THEN PRCAT = "Autotransplantation";
+    ELSE IF VAR24 in("BMT","çúêëà⁄êA") THEN PRCAT = "Unknown";
+    ELSE PRCAT = "Allotransplantation";
+    PRSTDTC = PUT(VAR25,IS8601DA.);
+  END ;
+  ELSE DELETE;
+
 RUN ;
 
 PROC SORT DATA=WK02 ;BY USUBJID ; RUN ;
 
 DATA  WK10;
   SET  WK02;
-  RETAIN RSSEQ;
+  RETAIN PRSEQ;
   BY  USUBJID;
-  IF FIRST.USUBJID = 1 THEN RSSEQ = 0;
-  RSSEQ = RSSEQ + 1;
+  IF FIRST.USUBJID = 1 THEN PRSEQ = 0;
+  PRSEQ = PRSEQ + 1;
 RUN ;
 
 PROC SQL ;
@@ -88,13 +90,10 @@ PROC SQL ;
     STUDYID  LENGTH=20    LABEL="Study Identifier",
     DOMAIN  LENGTH=2    LABEL="Domain Abbreviation",
     USUBJID  LENGTH=40    LABEL="Unique Subject Identifier",
-    RSSEQ      LABEL="Sequence Number",
-    RSTESTCD  LENGTH=8    LABEL="Response Assessment Short Name",
-    RSTEST  LENGTH=40    LABEL="Response Assessment Name",
-    RSCAT  LENGTH=40    LABEL="Category for Response Assessment",
-    RSORRES  LENGTH=200    LABEL="Response Assessment Original Result",
-    RSSTRESC  LENGTH=200    LABEL="Character Result/Finding in Std Format",
-    RSDTC  LENGTH=19    LABEL="Date/Time of Response Assesment"
+    PRSEQ      LABEL="Sequence Number",
+    PRTRT  LENGTH=8    LABEL="Report Name of Procedure",
+    PRCAT  LENGTH=40    LABEL="Category for Procedure",
+    PRSTDTC  LENGTH=19    LABEL="Start Date/Time of Procedure"
    FROM WK10;
 QUIT ;
 

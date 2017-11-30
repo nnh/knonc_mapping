@@ -65,6 +65,7 @@ DATA  WK02;
   SCTEST = "Definite Risk";
   SCORRES = COMPRESS(VAR6);
   SCSTRESC = COMPRESS(VAR6);
+  SCDTC = "";
 RUN ;
 
 PROC SORT DATA=WK02 ;BY USUBJID ; RUN ;
@@ -87,7 +88,8 @@ PROC SQL ;
     SCTESTCD  LENGTH=8    LABEL="Subject Characteristic Short Name",
     SCTEST  LENGTH=40    LABEL="Subject Characteristic",
     SCORRES  LENGTH=200    LABEL="Result or Finding in Original Units",
-    SCSTRESC  LENGTH=200    LABEL="Character Result/Finding in Std Format"
+    SCSTRESC  LENGTH=200    LABEL="Character Result/Finding in Std Format",
+    SCDTC  LENGTH=19    LABEL="Date/Time of Collection"
    FROM WK10;
 QUIT ;
 

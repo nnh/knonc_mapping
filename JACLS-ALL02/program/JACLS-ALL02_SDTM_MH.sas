@@ -57,20 +57,29 @@ RUN ;
 
 /*** Mapping ***/
 DATA  WK02;
+  LENGTH MHSCAT $40. MHPTCD $8.;
   SET  WK01;
   STUDYID = "JACLS-ALL02";
   DOMAIN = "MH";
   USUBJID = COMPRESS(STUDYID)||"-"||COMPRESS(PUT(VAR3,Z4.));
   MHCAT = "PRIMARY DIAGNOSIS";
+
+  MHSCAT="ICD10";
+  MHTERM = "急性リンパ芽球性白血病";
+  MHDECOD = "急性リンパ芽球性白血病";
+  MHSTDTC = PUT(VAR9,IS8601DA.);
+  MHPTCD = "C91.0";
+  OUTPUT;
+
+  MHSCAT="標準病名マスター";
   MHTERM = "小児急性リンパ性白血病";
   MHDECOD = "小児急性リンパ性白血病";
   MHSTDTC = PUT(VAR9,IS8601DA.);
-  MHPTCD = 20064495;
-  MHSOC = "急性リンパ芽球性白血病";
-  MHSOCCD = "C91.0";
+  MHPTCD = "20064495";
+  OUTPUT;
 RUN ;
 
-PROC SORT DATA=WK02 ;BY USUBJID MHSTDTC; RUN ;
+PROC SORT DATA=WK02 ;BY USUBJID MHSCAT MHSTDTC; RUN ;
 
 DATA  WK10;
   SET  WK02;
@@ -88,12 +97,11 @@ PROC SQL ;
     USUBJID  LENGTH=40    LABEL="Unique Subject Identifier",
     MHSEQ     LABEL="Sequence Number",
     MHCAT  LENGTH=40    LABEL="Category for Medical History",
+    MHSCAT  LENGTH=40    LABEL="SubCategory for Medical History",
     MHTERM  LENGTH=200    LABEL="Reported Term for the Medical History",
     MHDECOD  LENGTH=200    LABEL="Dictionary-Derived Term",
     MHSTDTC  LENGTH=19    LABEL="Start Date/Time of Medical History Event",
-    MHPTCD     LABEL="Preferred Term Code",
-    MHSOC  LENGTH=60    LABEL="Primary System Organ Class",
-    MHSOCCD  LENGTH=20    LABEL="Primary System Organ Class Code"
+    MHPTCD     LABEL="Preferred Term Code"
    FROM WK10;
 QUIT ;
 
