@@ -65,20 +65,35 @@ dm$COUNTRY <- "JPN"
 dm$RFXSTDTC <- ISO8601Date(dataset$治療開始日)
 dm$RFICDTC <- NA
 
+# ####### PR #######
+# 移植日が空白でないレコードのみ出力対象とする
+pr_temp <- subset(dataset, !is.na(移植日))
+pr <- data.frame(STUDYID = rep(kStudyId, nrow(pr_temp)))
+pr$DOMAIN <- "PR"
+pr$USUBJID <- paste(kStudyId, pr_temp$検体ID, sep = "-")
+pr$PRSEQ <- NA
+pr$PRTRT <- "Hematopoietic Stem Cell Transplantation"
+pr$PRCAT <- "Unknown"
+pr$PRSTDTC <- pr_temp$移植日
+# Sort(asc) KEY=USUBJID
+prSortlist <- order(pr$USUBJID)
+pr <- pr[prSortlist, ]
+# Set SEQ  Serial number for each USUBJID
+pr$PRSEQ <- SetSEQ(pr, "USUBJID", "PRSEQ")
+
 # ####### CE #######
-ce <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
+# 再発の有無が"再発"のレコードのみ出力対象とする
+ce_temp <- subset(dataset, 再発の有無=="再発")
+ce <- data.frame(STUDYID = rep(kStudyId, nrow(ce_temp)))
 ce$DOMAIN <- "CE"
-ce$USUBJID <- paste(kStudyId, dataset$検体ID, sep = "-")
+ce$USUBJID <- paste(kStudyId, ce_temp$検体ID, sep = "-")
 ce$CESEQ <- NA
-ce$CETERM <- ifelse(is.na(dataset$再発の有無), "",
-             ifelse(dataset$再発の有無 == "再発", "DISEASE RELAPSE", ""))
+ce$CETERM <- "DISEASE RELAPSE"
 ce$CEDECOD <- ce$CETERM
-ce$CEDTC <- ifelse(dataset$再発の有無 == "再発", ISO8601Date(dataset$再発日), NA)
+ce$CEDTC <- ISO8601Date(ce_temp$再発日)
 # Sort(asc) KEY=USUBJID,CETERM,CEDTC
 ceSortlist <- order(ce$USUBJID, ce$CETERM, ce$CEDTC)
-wk.ce <- ce[ceSortlist, ]
-# If CETERM is NA, don't output
-ce <- wk.ce[wk.ce$CETERM != "", ]
+ce <- ce[ceSortlist, ]
 # Set CESEQ  Serial number for each USUBJID
 ce$CESEQ <- SetSEQ(ce, "USUBJID", "CESEQ")
 
@@ -108,14 +123,23 @@ mh$DOMAIN <- "MH"
 mh$USUBJID <- paste(kStudyId, dataset$検体ID, sep = "-")
 mh$MHSEQ <- NA
 mh$MHCAT <- "PRIMARY DIAGNOSIS"
+mh$MHSCAT <- NA
 mh$MHTERM <- "急性骨髄性白血病"
 mh$MHDECOD <- mh$MHTERM
 mh$MHSTDTC <- NA
-mh$MHPTCD <- 20058373
-mh$MHSOC <- mh$MHTERM
-mh$MHSOCCD <- "C92.0"
-# Sort(asc) KEY=USUBJID  *MHTERM,MHSTDTC -> constant
-mhsortlist <- order(mh$USUBJID)
+mh$MHPTCD <- NA
+# ICD10
+mh$MHSCAT <- "ICD10"
+mh$MHPTCD <- "C92.0"
+mh_1 <- mh
+# 標準病名マスター
+mh$MHSCAT <- "標準病名マスター"
+mh$MHPTCD <- "20058373"
+mh_2 <- mh
+# merge
+mh <- rbind(mh_1, mh_2)
+# Sort(asc) KEY=USUBJID, MHCAT
+mhsortlist <- order(mh$USUBJID, mh$MHCAT)
 mh <- mh[mhsortlist, ]
 # Set MHSEQ  Serial number for each USUBJID
 mh$MHSEQ <- SetSEQ(mh, "USUBJID", "MHSEQ")
@@ -125,12 +149,13 @@ rs <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
 rs$DOMAIN <- "RS"
 rs$USUBJID <- paste(kStudyId, dataset$検体ID, sep = "-")
 rs$RSSEQ <- NA
-rs$RSTESTCD <- "CLINRESP"
-rs$RSTEST <- "Clinical Response"
+rs$RSTESTCD <- "INDCRESP"
+rs$RSTEST <- "Induction Response"
 rs$RSCAT <- "DEFINED BY PROTOCOL"
 rs$RSORRES <- ifelse(dataset$CR == "CR", "CR",
               ifelse(dataset$CR == "nonCR", "NR", "NE"))
 rs$RSSTRESC <- rs$RSORRES
+rs$RSDTC <- ISO8601Date(dataset$寛解到達日)
 # Sort(asc) KEY=USUBJID
 rssortlist <- order(rs$USUBJID)
 rs <- rs[rssortlist, ]
@@ -140,6 +165,7 @@ rs$RSSEQ <- SetSEQ(rs, "USUBJID", "RSSEQ")
 # Save datasets
 setwd("./output/SDTM")
 write.csv(dm, "dm.csv", row.names = F, na = "")
+write.csv(pr, "pr.csv", row.names = F, na = "")
 write.csv(ce, "ce.csv", row.names = F, na = "")
 write.csv(ds, "ds.csv", row.names = F, na = "")
 write.csv(mh, "mh.csv", row.names = F, na = "")
