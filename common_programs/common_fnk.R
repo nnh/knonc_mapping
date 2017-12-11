@@ -34,3 +34,29 @@ SetSEQ <- function(dst, pkey, columnname) {
 ISO8601Date <- function(dte) {
   return (as.character(as.Date(dte)))
 }
+
+#' WriteCSV_SDTM function
+#' Output Datasets
+#'
+#' @param encode File Encoding
+#' "CP932", "UTF-8"...
+#' @return
+#' @export CSV File
+WriteCSV_SDTM <- function(){
+  # 出力するdomainを指定、存在しないデータセットはスキップする
+  output_domain_T <- c("dm",
+                       "pr",
+                       "ce",
+                       "ds",
+                       "mh",
+                       "sc",
+                       "rs")
+  setwd("./output/SDTM")
+  for (i in 1:length(output_domain_T)){
+    if(exists(output_domain_T[i])){
+      dst <- get(output_domain_T[i])
+      write.csv(dst, paste0(output_domain_T[i], ".csv"), row.names = F, na = "")
+    }
+  }
+  setwd("../../..")
+}

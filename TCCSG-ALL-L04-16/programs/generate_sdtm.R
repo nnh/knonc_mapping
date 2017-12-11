@@ -32,12 +32,12 @@ filenames <- list.files()
 rawdata <- read_excel(filenames[1], sheet=1, col_names=T)
 setwd("../..")
 
-# Format dataS
+# Format dataset
 dataset <- rawdata[!is.na(rawdata[ ,"Sample No"]), ]
 dm <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
 dm$DOMAIN <- "DM"
-dm$USUBJID <- paste(kStudyId, dataset[ ,"Sample No"], sep = "-")
-dm$SUBJID <- dataset[ ,"Sample No"]
+dm$USUBJID <- apply(dataset[ ,"Sample No"], 1, function(x) paste(kStudyId, x, sep="-"))
+dm$SUBJID <- as.vector(t(dataset[ ,"Sample No"]))
 dm$RFSTDTC <- NA
 dm$BRTHDTC <- NA
 dm$AGE <- dataset$年齢
@@ -57,13 +57,9 @@ dm$RFICDTC <- NA
 ce_temp <- subset(dataset, イベント=="再発" || イベント=="2次がん")
 ce <- data.frame(STUDYID = rep(kStudyId, nrow(ce_temp)))
 ce$DOMAIN <- "CE"
-ce$USUBJID <- paste(kStudyId, ce_temp$EGA_id, sep = "-")
+ce$USUBJID <- apply(ce_temp[ ,"Sample No"], 1, function(x) paste(kStudyId, x, sep="-"))
 ce$CESEQ <- NA
-if (ce$イベント == "再発"){
-  wk_CETERM = "DISEASE RELAPSE"
-} else{
-  wk_CETERM = "SECONDARY CANCER"
-}
+wk_CETERM <- ifelse (ce_temp$イベント == "再発", "DISEASE RELAPSE", "SECONDARY CANCER")
 ce$CETERM <- wk_CETERM
 ce$CEDECOD <- ce$CETERM
 ce$CEDTC <- ISO8601Date(ce_temp$イベント日付)
@@ -76,7 +72,7 @@ ce$CESEQ <- SetSEQ(ce, "USUBJID", "CESEQ")
 # ####### DS #######
 ds <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
 ds$DOMAIN <- "DS"
-ds$USUBJID <- paste(kStudyId, dataset$EGA_id, sep = "-")
+ds$USUBJID <- apply(dataset[ ,"Sample No"], 1, function(x) paste(kStudyId, x, sep="-"))
 ds$DSSEQ <- NA
 ds$DSTERM <- ifelse(dataset$生死コード == "死亡", "DEATH",
                      ifelse(dataset$イベント == "プロトコール中止", "PHYSICIAN DECISION",
@@ -94,7 +90,7 @@ ds$DSSEQ <- SetSEQ(ds, "USUBJID", "DSSEQ")
 # ####### MH #######
 mh <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
 mh$DOMAIN <- "MH"
-mh$USUBJID <- paste(kStudyId, dataset$EGA_id, sep = "-")
+mh$USUBJID <- apply(dataset[ ,"Sample No"], 1, function(x) paste(kStudyId, x, sep="-"))
 mh$MHSEQ <- NA
 mh$MHCAT <- "PRIMARY DIAGNOSIS"
 mh$MHSCAT <- NA
@@ -123,7 +119,7 @@ mh$MHSEQ <- SetSEQ(mh, "USUBJID", "MHSEQ")
 # ####### RS #######
 rs <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
 rs$DOMAIN <- "RS"
-rs$USUBJID <- paste(kStudyId, dataset$EGA_id, sep = "-")
+rs$USUBJID <- apply(dataset[ ,"Sample No"], 1, function(x) paste(kStudyId, x, sep="-"))
 rs$RSSEQ <- NA
 rs$RSTESTCD <- "INDCRESP"
 rs$RSTEST <- "Induction Response"
@@ -139,10 +135,4 @@ rs <- rs[rssortlist, ]
 rs$RSSEQ <- SetSEQ(rs, "USUBJID", "RSSEQ")
 
 # Save datasets
-setwd("./output/SDTM")
-write.csv(dm, "dm.csv", row.names = F, na = "")
-write.csv(ce, "ce.csv", row.names = F, na = "")
-write.csv(ds, "ds.csv", row.names = F, na = "")
-write.csv(mh, "mh.csv", row.names = F, na = "")
-write.csv(rs, "rs.csv", row.names = F, na = "")
-setwd("../../..")
+WriteCSV_SDTM()
