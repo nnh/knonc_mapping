@@ -34,9 +34,15 @@ setwd("../..")
 
 # Format dataset
 dataset <- rawdata[!is.na(rawdata[ ,"Sample No"]), ]
-dm <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
+# Common Columns
+comdst <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
+comdst$DOMAIN <- NA
+comdst$DOMAIN <- NA
+comdst$USUBJID <- apply(dataset[ ,"Sample No"], 1, function(x) paste(kStudyId, x, sep="-"))
+
+# ####### DM #######
+dm <- comdst
 dm$DOMAIN <- "DM"
-dm$USUBJID <- apply(dataset[ ,"Sample No"], 1, function(x) paste(kStudyId, x, sep="-"))
 dm$SUBJID <- as.vector(t(dataset[ ,"Sample No"]))
 dm$RFSTDTC <- NA
 dm$BRTHDTC <- NA
@@ -53,8 +59,10 @@ dm$RFXSTDTC <- ISO8601Date(dataset$治療開始日)
 dm$RFICDTC <- NA
 
 # ####### CE #######
-# イベントが"再発"または"2次がん"のレコードのみ出力対象とする
-ce_temp <- subset(dataset, イベント=="再発" || イベント=="2次がん")
+# イベントが"再発"または"二次がん"のレコードのみ出力対象とする
+ce_temp <- subset(dataset, イベント=="再発")
+ce_temp <- rbind(ce_temp, subset(dataset, イベント=="二次がん"))
+# 出力対象が絞られているので個別でセット
 ce <- data.frame(STUDYID = rep(kStudyId, nrow(ce_temp)))
 ce$DOMAIN <- "CE"
 ce$USUBJID <- apply(ce_temp[ ,"Sample No"], 1, function(x) paste(kStudyId, x, sep="-"))
@@ -70,9 +78,8 @@ ce <- ce[ceSortlist, ]
 ce$CESEQ <- SetSEQ(ce, "USUBJID", "CESEQ")
 
 # ####### DS #######
-ds <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
+ds <- comdst
 ds$DOMAIN <- "DS"
-ds$USUBJID <- apply(dataset[ ,"Sample No"], 1, function(x) paste(kStudyId, x, sep="-"))
 ds$DSSEQ <- NA
 ds$DSTERM <- ifelse(dataset$生死コード == "死亡", "DEATH",
                      ifelse(dataset$イベント == "プロトコール中止", "PHYSICIAN DECISION",
@@ -88,9 +95,8 @@ ds <- ds[dssortlist, ]
 ds$DSSEQ <- SetSEQ(ds, "USUBJID", "DSSEQ")
 
 # ####### MH #######
-mh <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
+mh <- comdst
 mh$DOMAIN <- "MH"
-mh$USUBJID <- apply(dataset[ ,"Sample No"], 1, function(x) paste(kStudyId, x, sep="-"))
 mh$MHSEQ <- NA
 mh$MHCAT <- "PRIMARY DIAGNOSIS"
 mh$MHSCAT <- NA
@@ -117,9 +123,8 @@ mh <- mh[mhsortlist, ]
 mh$MHSEQ <- SetSEQ(mh, "USUBJID", "MHSEQ")
 
 # ####### RS #######
-rs <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
+rs <- comdst
 rs$DOMAIN <- "RS"
-rs$USUBJID <- apply(dataset[ ,"Sample No"], 1, function(x) paste(kStudyId, x, sep="-"))
 rs$RSSEQ <- NA
 rs$RSTESTCD <- "INDCRESP"
 rs$RSTEST <- "Induction Response"
