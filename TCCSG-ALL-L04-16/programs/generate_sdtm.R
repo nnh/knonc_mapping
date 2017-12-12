@@ -91,9 +91,7 @@ ds <- comdst
 ds$DOMAIN <- "DS"
 ds$DSSEQ <- NA
 ds$DSTERM <- ifelse(dataset$生死コード == "死亡", "DEATH",
-                     ifelse(dataset$イベント == "プロトコール中止", "PHYSICIAN DECISION",
-                            ifelse(dataset$寛解有無 != "寛解", "PHYSICIAN DECISION",
-                                   ifelse(dataset$生死コード == "生存", "COMPLETED", "OTHER"))))
+             ifelse(dataset$生死コード == "生存", "COMPLETED", "OTHER"))
 ds$DSDECOD <- ds$DSTERM
 ds$DSCAT <- "DISPOSITION EVENT"
 ds$DSSTDTC <- ISO8601Date(dataset$最終観察日付)  # ISO8601format
