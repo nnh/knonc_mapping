@@ -2,18 +2,26 @@ DmArmcd <- function(dst_row){
   # DM$ARMCD
   # リスク群が"SR" or "IR"であれば"A"、"HR" or "HR/SCT" or "HEX" or "HEX/SCT"であれば"B"
   # 上記以外で寛解有無が寛解ならば"U"、それ以外なら"INDFAIL"
-  kArm_A <- "Induction therapy-A (Week 1-6): PSL, VCR, THP-ADR, L-ASP, MTX, Ara-C, HDC. Consolidation therapy-A for standard and intermediate risk patients (Week 8-10): 6MP, Ara-C, CPM, MTX, HDC. "
+  kArm_A <- "Induction therapy-A (Week 1-6): PSL, VCR, THP-ADR, L-ASP, MTX, Ara-C, HDC. Consolidation therapy-A for standard and intermediate risk patients (Week 8-10): 6MP, Ara-C, CPM, MTX, HDC."
   kArm_B <- "Induction therapy-B (Week 1-6): PSL, VCR, THP-ADR,DNR, CPA, L-ASP, MTX, Ara-C, HDC. Early Consolidation therapy-B (Week 8): DEX, MTX, CPA, Ara-C, L-ASP, HDC."
   risk_group <- dst_row["リスク群"]
   remission <- dst_row["寛解有無"]
   if (risk_group=="SR" || risk_group=="IR"){
-    wk_list <- c("A", kArm_A)
+    wk_arm <- "A"
+    wk_armcd <- kArm_A
   } else if (risk_group=="HR" || risk_group=="HR/SCT" || risk_group=="HEX" || risk_group=="HEX/SCT"){
-    wk_list <- c("B", kArm_B)
+    wk_arm <- "B"
+    wk_armcd <- kArm_B
   } else{
-    wk_list <- ifelse(remission!="寛解", c("INDFAIL","Induction Failure"), c("U","Unknown"))
+    if (remission != "寛解"){
+      wk_arm <- "INDFAIL"
+      wk_armcd <- "Induction Failure"
+    } else {
+      wk_arm <- "U"
+      wk_armcd <- "Unknown"
+    }
   }
-  return(c(arm=wk_list[1],armcd=wk_list[2]))
+  return(c(arm=wk_arm, armcd=wk_armcd))
 }
 
 # readxlのインストールが必要
@@ -48,7 +56,8 @@ dm$RFSTDTC <- NA
 dm$BRTHDTC <- NA
 dm$AGE <- dataset$年齢
 dm$AGEU <- "YEARS"
-dm$SEX <- dataset$性別
+dm$SEX <- ifelse(dataset$性別 == "男", "M",
+                 ifelse(dataset$性別 == "女", "F", "U"))
 wk_armcd <- apply(dataset, 1, DmArmcd)
 dm$ARMCD <- wk_armcd[1, ]
 dm$ARM <- wk_armcd[2, ]
@@ -122,6 +131,21 @@ mh <- mh[mhsortlist, ]
 # Set MHSEQ  Serial number for each USUBJID
 mh$MHSEQ <- SetSEQ(mh, "USUBJID", "MHSEQ")
 
+# ####### SC #######
+sc <- comdst
+sc$DOMAIN <- "SC"
+sc$SCSEQ <- NA
+sc$SCTESTCD <-"DEFRISK"
+sc$SCTEST <- "Definite Risk"
+sc$SCORRES <- dataset$リスク群
+sc$SCSTRESC <- sc$SCORRES
+sc$SCDTC <- NA
+# Sort(asc) KEY=USUBJID
+scsortlist <- order(sc$USUBJID)
+sc <- sc[scsortlist, ]
+# Set SCSEQ  Serial number for each USUBJID
+sc$SCSEQ <- SetSEQ(sc, "USUBJID", "SCSEQ")
+
 # ####### RS #######
 rs <- comdst
 rs$DOMAIN <- "RS"
@@ -140,4 +164,5 @@ rs <- rs[rssortlist, ]
 rs$RSSEQ <- SetSEQ(rs, "USUBJID", "RSSEQ")
 
 # Save datasets
-WriteCSV_SDTM()
+WriteCSV_SDTM("CP932")
+# WriteCSV_SDTM("UTF-8")
