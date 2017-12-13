@@ -1,21 +1,23 @@
 DmArmcd <- function(dst_row){
   # DM$ARMCD
-  # リスク群が"SR" or "IR"であれば"A"、"HR" or "HR/SCT" or "HEX" or "HEX/SCT"であれば"B"
-  # 上記以外で寛解有無が寛解ならば"U"、それ以外なら"INDFAIL"
+  # 寛解有無が寛解以外ならば"INDFAIL"
+  # 上記以外でリスク群が"SR" or "IR"であれば"A"、"HR" or "HR/SCT" or "HEX" or "HEX/SCT"であれば"B"
+  # どれにも当てはまらなければ"U"
   kArm_A <- "Induction therapy-A (Week 1-6): PSL, VCR, THP-ADR, L-ASP, MTX, Ara-C, HDC. Consolidation therapy-A for standard and intermediate risk patients (Week 8-10): 6MP, Ara-C, CPM, MTX, HDC."
   kArm_B <- "Induction therapy-B (Week 1-6): PSL, VCR, THP-ADR,DNR, CPA, L-ASP, MTX, Ara-C, HDC. Early Consolidation therapy-B (Week 8): DEX, MTX, CPA, Ara-C, L-ASP, HDC."
   risk_group <- dst_row["リスク群"]
   remission <- dst_row["寛解有無"]
-  if (risk_group=="SR" || risk_group=="IR"){
-    wk_arm <- "A"
-    wk_armcd <- kArm_A
-  } else if (risk_group=="HR" || risk_group=="HR/SCT" || risk_group=="HEX" || risk_group=="HEX/SCT"){
-    wk_arm <- "B"
-    wk_armcd <- kArm_B
-  } else{
-    if (remission != "寛解"){
-      wk_arm <- "INDFAIL"
-      wk_armcd <- "Induction Failure"
+
+  if (remission != "寛解"){
+    wk_arm <- "INDFAIL"
+    wk_armcd <- "Induction Failure"
+  } else {
+    if (risk_group=="SR" || risk_group=="IR"){
+      wk_arm <- "A"
+      wk_armcd <- kArm_A
+    } else if (risk_group=="HR" || risk_group=="HR/SCT" || risk_group=="HEX" || risk_group=="HEX/SCT"){
+      wk_arm <- "B"
+      wk_armcd <- kArm_B
     } else {
       wk_arm <- "U"
       wk_armcd <- "Unknown"
