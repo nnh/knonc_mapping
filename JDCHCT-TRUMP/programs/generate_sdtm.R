@@ -16,8 +16,8 @@ source("./common_programs/common_fnk.R")
 # TimeZone取得エラー対応
 Sys.setenv(TZ="Asia/Tokyo")
 kStudyId <- "JDCHCT-TRUMP"
-# 今日の日付
-kToday <- Sys.Date()
+# 基準日
+kToday <- as.Date("2017/11/25")
 
 # Load data
 setwd(kStudyId)
@@ -28,18 +28,20 @@ setwd("../..")
 
 # Format dataset
 dataset <- rawdata[!is.na(rawdata[ ,"EGA_id"]), ]
-# 誕生日情報を追加
-for (i in 1:nrow(dm)) {
+# datasetに開始基準日、誕生日情報を追加
+dataset$RFSTDTC <- NA
+dataset$BRTHDTC <- NA
+for (i in 1:nrow(dataset)) {
   if (dataset[i,".DaysOS"] != "NA") {
     wk_RFSTDTC <- kToday - as.numeric(dataset[i,".DaysOS"])
-     <- format(wk_RFSTDTC)
+    dataset[i,"RFSTDTC"] <- format(wk_RFSTDTC)
     if (dataset[i,".Age"] != "NA") {
       # 小数点以下切り捨て
       #      wk_Age <- floor(as.numeric(dataset[i,".Age"]) * 365.25)
       wk_Age <- YearsConvDays(dataset[i,".Age"])
       # 年齢は登録日時点、登録日から年齢分の日数を除して誕生日を算出
       wk_birth <- wk_RFSTDTC - wk_Age
-      dm[i,"BRTHDTC"] <- format(wk_birth)
+      dataset[i,"BRTHDTC"] <- format(wk_birth)
     }
   }
 }
@@ -52,27 +54,14 @@ comdst$USUBJID <- apply(dataset[ ,"EGA_id"], 1, function(x) paste(kStudyId, x, s
 # ####### DM #######
 dm <- comdst
 dm$DOMAIN <- "DM"
-dm$SUBJID <- dataset[ ,"EGA_id"]
-dm$RFSTDTC <- NA
-dm$BRTHDTC <- NA
-for (i in 1:nrow(dm)) {
-  if (dataset[i,".DaysOS"] != "NA") {
-    wk_RFSTDTC <- kToday - as.numeric(dataset[i,".DaysOS"])
-    dm[i,"RFSTDTC"] <- format(wk_RFSTDTC)
-    if (dataset[i,".Age"] != "NA") {
-      # 小数点以下切り捨て
-#      wk_Age <- floor(as.numeric(dataset[i,".Age"]) * 365.25)
-      wk_Age <- YearsConvDays(dataset[i,".Age"])
-      # 年齢は登録日時点、登録日から年齢分の日数を除して誕生日を算出
-      wk_birth <- wk_RFSTDTC - wk_Age
-      dm[i,"BRTHDTC"] <- format(wk_birth)
-    }
-  }
-}
-# RFSTDTC - INT(Variables_Yoshizato Blood 2017_send..Age*12*365.25)
-dm$AGE <- dataset[ ,".Age"]
+dm$SUBJID <- as.vector(t(dataset[ ,"EGA_id"]))
+dm$RFSTDTC <- dataset$RFSTDTC
+dm$BRTHDTC <- dataset$BRTHDTC
+dm$AGE <- as.vector(t(dataset[ ,".Age"]))
 dm$AGEU <- "YEARS"
-dm$SEX <- dataset[ ,".Sex.R"]
+# 1:male,0:female
+dm$SEX <- ifelse(dataset$.Sex.R == 1, "M",
+                 ifelse(dataset$.Sex.R == 0, "F", "U"))
 dm$ARMCD <- NA
 dm$ARM <- NA
 dm$ACTARMCD <- dm$ARMCD
@@ -83,7 +72,7 @@ dm$RFICDTC <- NA
 
 # ####### PR #######
 # .DxToSCTが欠損でないレコードのみ出力対象とする
-pr_temp <- subset(dataset, !is.na(.DxToSCT))
+pr_temp <- subset(dataset, .DxToSCT != "NA")
 # 出力対象が絞られているので個別でセット
 pr <- data.frame(STUDYID = rep(kStudyId, nrow(pr_temp)))
 pr$DOMAIN <- "PR"
@@ -92,6 +81,11 @@ pr$PRSEQ <- NA
 pr$PRTRT <- "Hematopoietic Stem Cell Transplantation"
 pr$PRCAT <- "Allotransplantation"
 pr$PRSTDTC <- NA
+# Sort(asc) KEY=USUBJID
+prSortlist <- order(pr$USUBJID)
+pr <- pr[prSortlist, ]
+# Set PRSEQ  Serial number for each USUBJID
+pr$PRSEQ <- SetSEQ(pr, "USUBJID", "PRSEQ")
 
 # ####### CE #######
 # .Relapse = 1のレコードのみ出力対象とする
@@ -103,7 +97,13 @@ ce$USUBJID <- apply(ce_temp[ ,"EGA_id"], 1, function(x) paste(kStudyId, x, sep="
 ce$CESEQ <- NA
 ce$CETERM <- "DISEASE RELAPSE"
 ce$CEDECOD <- ce$CETERM
-ce$CEDTC <- cetemp[ ,".DaysRelapse2"] + RFSTDTC
+ce$CEDTC <- NA
+for (i in 1:nrow(ce)) {
+  if (ce_temp[i,".DaysRelapse2"] != "NA" && !is.na(ce_temp[i,"RFSTDTC"])) {
+    # .DaysRelapse2 小数点以下切り捨て
+    ce[i,"CEDTC"] <- format(floor(as.numeric(ce_temp[i,".DaysRelapse2"])) + as.Date(as.character(ce_temp[i,"RFSTDTC"])))
+  }
+}
 # Sort(asc) KEY=USUBJID,CETERM,CEDTC
 ceSortlist <- order(ce$USUBJID, ce$CETERM, ce$CEDTC)
 ce <- ce[ceSortlist, ]
@@ -118,7 +118,7 @@ ds$DSTERM <- ifelse(dataset[ ,".OS"] == "0", "COMPLETED",
                     ifelse(dataset[ ,".OS"] == "1", "DEATH", "OTHER"))
 ds$DSDECOD <- ds$DSTERM
 ds$DSCAT <- "DISPOSITION EVENT"
-ds$DSSTDTC <- kToday
+ds$DSSTDTC <- format(kToday)
 # Sort(asc) KEY=USUBJID,DSTERM,DSSTDTC
 dssortlist <- order(ds$USUBJID, ds$DSTERM, ds$DSSTDTC)
 ds <- ds[dssortlist, ]
@@ -132,20 +132,22 @@ mh$MHSEQ <- NA
 mh$MHCAT <- "PRIMARY DIAGNOSIS"
 mh$MHSCAT <- NA
 mh$MHTERM <- NA
-mh$MHDECOD <- mh$MHTERM
+mh$MHDECOD <- NA
 # 病名開始日 .age_dxは発症時年齢なので誕生日に年齢分の日数を加算して算出
-wk_age_dx <- YearsConvDays(dataset[i,".age_dx"])
+wk_age_dx <- YearsConvDays(dataset[i,"age_dx"])
 mh$MHSTDTC <- format(wk_birth + wk_age_dx)
 mh$MHPTCD <- NA
 # ICD10
 mh$MHSCAT <- "ICD10"
 mh$MHPTCD <- "D46.9"
 mh$MHTERM <- "骨髄異形成症候群"
+mh$MHDECOD <- mh$MHTERM
 mh_1 <- mh
 # 標準病名マスター
 mh$MHSCAT <- "標準病名マスター"
 mh$MHPTCD <- "20061922"
 mh$MHTERM <- "骨髄異形成症候群"
+mh$MHDECOD <- mh$MHTERM
 mh_2 <- mh
 # merge
 mh <- rbind(mh_1, mh_2)
@@ -161,7 +163,9 @@ sc$DOMAIN <- "SC"
 sc$SCSEQ <- NA
 sc$SCTESTCD <- "IPSS"
 sc$SCTEST <- sc$SCTESTCD
+# NAが文字列になるので変換
 sc$SCORRES <- dataset$MDS_dx_ipss
+sc$SCORRES[sc$SCORRES == "NA"] <- NA
 sc$SCSTRESC <- sc$SCORRES
 sc$SCDTC <- NA
 # Sort(asc) KEY=USUBJID
