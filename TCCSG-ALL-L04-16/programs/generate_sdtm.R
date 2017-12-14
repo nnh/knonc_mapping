@@ -110,18 +110,20 @@ mh$MHSEQ <- NA
 mh$MHCAT <- "PRIMARY DIAGNOSIS"
 mh$MHSCAT <- NA
 mh$MHTERM <- NA
-mh$MHDECOD <- mh$MHTERM
+mh$MHDECOD <- NA
 mh$MHSTDTC <- NA
 mh$MHPTCD <- NA
 # ICD10
 mh$MHSCAT <- "ICD10"
 mh$MHPTCD <- "C91.0"
 mh$MHTERM <- "急性リンパ芽球性白血病"
+mh$MHDECOD <- mh$MHTERM
 mh_1 <- mh
 # 標準病名マスター
 mh$MHSCAT <- "標準病名マスター"
 mh$MHPTCD <- "20064495"
 mh$MHTERM <- "小児急性リンパ性白血病"
+mh$MHDECOD <- mh$MHTERM
 mh_2 <- mh
 # merge
 mh <- rbind(mh_1, mh_2)
