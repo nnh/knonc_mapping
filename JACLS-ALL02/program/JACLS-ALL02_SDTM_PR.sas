@@ -91,7 +91,7 @@ PROC SQL ;
     DOMAIN  LENGTH=2    LABEL="Domain Abbreviation",
     USUBJID  LENGTH=40    LABEL="Unique Subject Identifier",
     PRSEQ      LABEL="Sequence Number",
-    PRTRT  LENGTH=8    LABEL="Report Name of Procedure",
+    PRTRT  LENGTH=200    LABEL="Report Name of Procedure",
     PRCAT  LENGTH=40    LABEL="Category for Procedure",
     PRSTDTC  LENGTH=19    LABEL="Start Date/Time of Procedure"
    FROM WK10;
