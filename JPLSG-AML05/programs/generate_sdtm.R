@@ -1,3 +1,5 @@
+# todo USUBJID のSUBJIDを4けたで0埋めする
+
 DmArmcd <- function(dst_row){
   # DM$ARMCD
   kArm_A <- "3 courses of intensification multi-agent combination chemotherapy."
@@ -208,6 +210,7 @@ sc$SCSEQ <- SetSEQ(sc, "USUBJID", "SCSEQ")
 sc <- sc[ , colnames(sc) != "sortkey"]
 
 # ####### RS #######
+# BMA-3判定日が日付扱いになるもののみ抽出対象とする
 rs <- comdst
 rs$DOMAIN <- "RS"
 rs$RSSEQ <- NA
@@ -218,17 +221,16 @@ rs$RSORRES <- ifelse(dataset[ ,kRemission] == 1, "CR",
                      ifelse(dataset[ ,kRemission] == 2, "NR", "NE"))
 
 rs$RSSTRESC <- rs$RSORRES
+rs$sortkey <- dataset$sortkey
 rs$RSDTC <- NA
 for (i in 1:nrow(dataset)) {
-  # 0-9のみからなる文字列なら日付扱い、それ以外はそのまま格納
+  # 0-9のみからなる文字列なら日付扱い、それ以外はNAにして行削除
   if (!is.na(dataset[i,kBMA3]) && length(grep("[0-9]", dataset[i,kBMA3])) > 0) {
     rs[i,"RSDTC"] <- format(as.Date(as.numeric(as.vector(t(dataset[i,kBMA3]))), origin="1899-12-30"))
-  } else {
-    rs[i,"RSDTC"] <- as.vector(t(dataset[i,kBMA3]))
   }
 }
+rs <- subset(rs, !is.na(rs$RSDTC))
 # Sort(asc) KEY=USUBJID
-rs$sortkey <- dataset$sortkey
 rssortlist <- order(rs$sortkey)
 rs <- rs[rssortlist, ]
 # Set RSSEQ  Serial number for each USUBJID
