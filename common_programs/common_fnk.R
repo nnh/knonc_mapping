@@ -40,9 +40,10 @@ ISO8601Date <- function(dte) {
 #'
 #' @param encode File Encoding
 #' "CP932", "UTF-8"...
+#'        outputpath 省略時は"./output/SDTM"をセット
 #' @return
 #' @export CSV File
-WriteCSV_SDTM <- function(encode){
+WriteCSV_SDTM <- function(encode, outputpath=NA){
   # 出力するdomainを指定、存在しないデータセットはスキップする
   output_domain_T <- c("dm",
                        "pr",
@@ -51,12 +52,17 @@ WriteCSV_SDTM <- function(encode){
                        "mh",
                        "sc",
                        "rs")
-  setwd("./output/SDTM")
+  if (is.na(outputpath)){
+    setwd("./output/SDTM")
+    outputpath <- getwd()
+  }
   for (i in 1:length(output_domain_T)){
     if(exists(output_domain_T[i])){
       dst <- get(output_domain_T[i])
-      write.csv(dst, paste0(output_domain_T[i], ".csv"), row.names = F, na = "", fileEncoding = encode)
+      write.csv(dst, paste0(outputpath, "/", output_domain_T[i], ".csv"), row.names = F, na = "", fileEncoding = encode)
     }
   }
-  setwd("../../..")
+  if (is.na(outputpath)){
+    setwd("../../..")
+  }
 }

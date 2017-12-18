@@ -5,7 +5,6 @@ DmArmcd <- function(dst_row){
   kArm_A <- "3 courses of intensification multi-agent combination chemotherapy."
   kArm_B <- "1 to 3 courses of intensification multi-agent combination chemotherapy followed by allogeneic hematopoietic stem cell transplantation."
   risk_group <- dst_row[kRiskgroup]
-  # remission <- dst_row[kRemission]
 
   if (risk_group == 1 || risk_group == 2){
     wk_arm <- "A"
@@ -28,11 +27,16 @@ DmArmcd <- function(dst_row){
 # readxlのインストールが必要
 # install.packages('readxl')
 library("readxl")
-# common function
-source("./common_programs/common_fnk.R")
 # TimeZone取得エラー対応
 Sys.setenv(TZ="Asia/Tokyo")
 kStudyId <- "JPLSG-AML05"
+# set path
+basepath <- "/Users/admin/Desktop/R/knonc_mapping"
+rawdatapath <- paste(basepath, kStudyId, "input/rawdata", sep="/")
+outputpath <- paste(basepath, kStudyId, "output/SDTM", sep="/")
+# common function
+common_function <- paste0(basepath, "/common_programs/common_fnk.R")
+source(common_function)
 # 列コンスタント
 kAML05No <- 1  # kAML05No
 kSex <- 5  # 性別
@@ -43,11 +47,8 @@ kDonor <- 85  # 移植ドナー
 kEvent <- 95  # イベントの種類
 kDiagnosisDate <- 90  # 診断日
 # Load data
-setwd(kStudyId)
-setwd("./input/rawdata")
-filenames <- list.files()
+filenames <- list.files(rawdatapath, full.names=T)
 rawdata <- read_excel(filenames[1], sheet=1, col_names=F)
-setwd("../..")
 
 # Format dataset
 dataset <- rawdata[!is.na(rawdata[  ,kAML05No]), ]
@@ -58,12 +59,12 @@ dataset <- dataset[-1, ]
 dataset$sortkey <- as.numeric(as.vector(t(dataset[ ,kAML05No])))
 
 # Common Columns
-comdst <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
-comdst$DOMAIN <- NA
-comdst$USUBJID <- apply(dataset[ ,kAML05No], 1, function(x) paste(kStudyId, x, sep="-"))
+common_dataset  <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
+common_dataset $DOMAIN <- NA
+common_dataset $USUBJID <- apply(dataset[ ,kAML05No], 1, function(x) paste(kStudyId, x, sep="-"))
 
 # ####### DM #######
-dm <- comdst
+dm <- common_dataset
 dm$DOMAIN <- "DM"
 dm$SUBJID <- as.vector(t(dataset[ ,kAML05No]))
 dm$RFSTDTC <- NA
@@ -82,8 +83,8 @@ dm$RFXSTDTC <- NA
 dm$RFICDTC <- NA
 # Sort(asc) KEY=USUBJID
 dm$sortkey <- dataset$sortkey
-dmSortlist <- order(dm$sortkey)
-dm <- dm[dmSortlist, ]
+dm_sortlist <- order(dm$sortkey)
+dm <- dm[dm_sortlist, ]
 # sortkey列を削除
 dm <- dm[ , colnames(dm) != "sortkey"]
 
@@ -101,8 +102,8 @@ pr$PRSTDTC <- format(as.Date(as.numeric(as.vector(t(pr_temp$移植日))), origin
 
 # Sort(asc) KEY=USUBJID
 pr$sortkey <- pr_temp$sortkey
-prSortlist <- order(pr$sortkey)
-pr <- pr[prSortlist, ]
+pr_sortlist <- order(pr$sortkey)
+pr <- pr[pr_sortlist, ]
 # Set PRSEQ  Serial number for each USUBJID
 pr$PRSEQ <- SetSEQ(pr, "USUBJID", "PRSEQ")
 # sortkey列を削除
@@ -122,15 +123,15 @@ ce$CEDECOD <- ce$CETERM
 ce$CEDTC <- format(as.Date(as.numeric(as.vector(t(ce_temp$イベント日))),origin="1899-12-30"))
 # Sort(asc) KEY=USUBJID,CETERM,CEDTC
 ce$sortkey <- ce_temp$sortkey
-ceSortlist <- order(ce$sortkey, ce$CETERM, ce$CEDTC)
-ce <- ce[ceSortlist, ]
+ce_sortlist <- order(ce$sortkey, ce$CETERM, ce$CEDTC)
+ce <- ce[ce_sortlist, ]
 # Set CESEQ  Serial number for each USUBJID
 ce$CESEQ <- SetSEQ(ce, "USUBJID", "CESEQ")
 # sortkey列を削除
 ce <- ce[ , colnames(ce) != "sortkey"]
 
 # ####### DS #######
-ds <- comdst
+ds <- common_dataset
 ds$DOMAIN <- "DS"
 ds$DSSEQ <- NA
 ds$DSTERM <- apply(dataset[ ,"死亡日"], 1, function(x) ifelse(x != "N/A", "DEATH", ifelse(x == "N/A", "COMPLETED", "OTHER")))
@@ -139,15 +140,15 @@ ds$DSCAT <- "DISPOSITION EVENT"
 ds$DSSTDTC <- format(as.Date(as.numeric(as.vector(t(dataset$最終確認日))), origin="1899-12-30"))
 # Sort(asc) KEY=USUBJID,DSTERM,DSSTDTC
 ds$sortkey <- dataset$sortkey
-dssortlist <- order(ds$sortkey, ds$DSTERM, ds$DSSTDTC)
-ds <- ds[dssortlist, ]
+ds_sortlist <- order(ds$sortkey, ds$DSTERM, ds$DSSTDTC)
+ds <- ds[ds_sortlist, ]
 # Set DSSEQ  Serial number for each USUBJID
 ds$DSSEQ <- SetSEQ(ds, "USUBJID", "DSSEQ")
 # sortkey列を削除
 ds <- ds[ , colnames(ds) != "sortkey"]
 
 # ####### MH #######
-mh <- comdst
+mh <- common_dataset
 mh$DOMAIN <- "MH"
 mh$MHSEQ <- NA
 mh$MHCAT <- "PRIMARY DIAGNOSIS"
@@ -175,8 +176,8 @@ row.names(mh_2) <- NULL
 rm(mh)
 mh <- rbind(mh_1, mh_2)
 # Sort(asc) KEY=USUBJID, MHCAT
-mhsortlist <- order(mh$sortkey, mh$MHCAT)
-mh <- mh[mhsortlist, ]
+mh_sortlist <- order(mh$sortkey, mh$MHCAT)
+mh <- mh[mh_sortlist, ]
 # Set MHSEQ  Serial number for each USUBJID
 mh$MHSEQ <- SetSEQ(mh, "USUBJID", "MHSEQ")
 # sortkey列を削除
@@ -202,8 +203,8 @@ sc$SCSTRESC <- sc$SCORRES
 sc$SCDTC <- NA
 # Sort(asc) KEY=USUBJID
 sc$sortkey <- sc_temp$sortkey
-scsortlist <- order(sc$sortkey)
-sc <- sc[scsortlist, ]
+sc_sortlist <- order(sc$sortkey)
+sc <- sc[sc_sortlist, ]
 # Set SCSEQ  Serial number for each USUBJID
 sc$SCSEQ <- SetSEQ(sc, "USUBJID", "SCSEQ")
 # sortkey列を削除
@@ -211,7 +212,7 @@ sc <- sc[ , colnames(sc) != "sortkey"]
 
 # ####### RS #######
 # BMA-3判定日が日付扱いになるもののみ抽出対象とする
-rs <- comdst
+rs <- common_dataset
 rs$DOMAIN <- "RS"
 rs$RSSEQ <- NA
 rs$RSTESTCD <- "INDCRESP"
@@ -231,13 +232,12 @@ for (i in 1:nrow(dataset)) {
 }
 rs <- subset(rs, !is.na(rs$RSDTC))
 # Sort(asc) KEY=USUBJID
-rssortlist <- order(rs$sortkey)
-rs <- rs[rssortlist, ]
+rs_sortlist <- order(rs$sortkey)
+rs <- rs[rs_sortlist, ]
 # Set RSSEQ  Serial number for each USUBJID
 rs$RSSEQ <- SetSEQ(rs, "USUBJID", "RSSEQ")
 # sortkey列を削除
 rs <- rs[ , colnames(rs) != "sortkey"]
 
 # Save datasets
-WriteCSV_SDTM("CP932")
-# WriteCSV_SDTM("UTF-8")
+WriteCSV_SDTM("CP932", outputpath)
