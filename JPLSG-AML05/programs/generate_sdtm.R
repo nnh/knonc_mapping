@@ -1,5 +1,3 @@
-# todo USUBJID のSUBJIDを4けたで0埋めする
-
 DmArmcd <- function(dst_row){
   # DM$ARMCD
   kArm_A <- "3 courses of intensification multi-agent combination chemotherapy."
@@ -22,6 +20,14 @@ DmArmcd <- function(dst_row){
     }
   }
   return(c(arm=wk_arm, armcd=wk_armcd))
+}
+
+SetCommon_dataset <- function(input_dataset){
+  # Common Columns
+  common_dataset <- data.frame(STUDYID = rep(kStudyId, nrow(input_dataset)))
+  common_dataset$DOMAIN <- NA
+  common_dataset$USUBJID <- input_dataset$USUBJID
+  return(common_dataset)
 }
 
 # readxlのインストールが必要
@@ -55,16 +61,12 @@ dataset <- rawdata[!is.na(rawdata[  ,kAML05No]), ]
 # 列名設定
 colnames(dataset) <- dataset[1, ]
 dataset <- dataset[-1, ]
-# ソートキーの設定、USUBJIDでソートすると想定した並び順にならないため
-dataset$sortkey <- as.numeric(as.vector(t(dataset[ ,kAML05No])))
-
-# Common Columns
-common_dataset  <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
-common_dataset $DOMAIN <- NA
-common_dataset $USUBJID <- apply(dataset[ ,kAML05No], 1, function(x) paste(kStudyId, x, sep="-"))
+# datasetにUSUBJIDをセット
+# SUBJIDが数値の場合は4桁で0パディングする
+dataset$USUBJID <- apply(dataset[ ,kAML05No], 1, function(x) paste(kStudyId, sprintf("%04s", x), sep="-"))
 
 # ####### DM #######
-dm <- common_dataset
+dm <- SetCommon_dataset(dataset)
 dm$DOMAIN <- "DM"
 dm$SUBJID <- as.vector(t(dataset[ ,kAML05No]))
 dm$RFSTDTC <- NA
@@ -82,73 +84,58 @@ dm$COUNTRY <- "JPN"
 dm$RFXSTDTC <- NA
 dm$RFICDTC <- NA
 # Sort(asc) KEY=USUBJID
-dm$sortkey <- dataset$sortkey
-dm_sortlist <- order(dm$sortkey)
+dm_sortlist <- order(dm$USUBJID)
 dm <- dm[dm_sortlist, ]
-# sortkey列を削除
-dm <- dm[ , colnames(dm) != "sortkey"]
 
 # ####### PR #######
 # 移植日が欠損でないレコードのみ出力対象とする
 pr_temp <- subset(dataset, 移植日 != "N/A")
-# 出力対象が絞られているので個別でセット
-pr <- data.frame(STUDYID = rep(kStudyId, nrow(pr_temp)))
+pr <- SetCommon_dataset(pr_temp)
 pr$DOMAIN <- "PR"
-pr$USUBJID <- apply(pr_temp[ ,kAML05No], 1, function(x) paste(kStudyId, x, sep="-"))
 pr$PRSEQ <- NA
 pr$PRTRT <- "Hematopoietic Stem Cell Transplantation"
 pr$PRCAT <- apply(pr_temp[ ,kDonor], 1, function(x) ifelse(x == "6" || is.na(x), "Unknown", "Allotransplantation"))
 pr$PRSTDTC <- format(as.Date(as.numeric(as.vector(t(pr_temp$移植日))), origin="1899-12-30"))
 
 # Sort(asc) KEY=USUBJID
-pr$sortkey <- pr_temp$sortkey
-pr_sortlist <- order(pr$sortkey)
+pr_sortlist <- order(pr$USUBJID)
 pr <- pr[pr_sortlist, ]
 # Set PRSEQ  Serial number for each USUBJID
 pr$PRSEQ <- SetSEQ(pr, "USUBJID", "PRSEQ")
-# sortkey列を削除
-pr <- pr[ , colnames(pr) != "sortkey"]
 
 # ####### CE #######
 # イベントの種類 = 2 or 4のレコードのみ出力対象とする
 ce_temp <- subset(dataset, dataset[ ,kEvent] == 2)
 ce_temp <- rbind(ce_temp, subset(dataset, dataset[ ,kEvent] == 4))
-# 出力対象が絞られているので個別でセット
-ce <- data.frame(STUDYID = rep(kStudyId, nrow(ce_temp)))
+ce <- SetCommon_dataset(ce_temp)
 ce$DOMAIN <- "CE"
-ce$USUBJID <- apply(ce_temp[ ,kAML05No], 1, function(x) paste(kStudyId, x, sep="-"))
 ce$CESEQ <- NA
 ce$CETERM <- ifelse(ce_temp[ ,kEvent] == 2,"DISEASE RELAPSE","SECONDARY CANCER")
 ce$CEDECOD <- ce$CETERM
 ce$CEDTC <- format(as.Date(as.numeric(as.vector(t(ce_temp$イベント日))),origin="1899-12-30"))
 # Sort(asc) KEY=USUBJID,CETERM,CEDTC
-ce$sortkey <- ce_temp$sortkey
-ce_sortlist <- order(ce$sortkey, ce$CETERM, ce$CEDTC)
+ce_sortlist <- order(ce$USUBJID, ce$CETERM, ce$CEDTC)
 ce <- ce[ce_sortlist, ]
 # Set CESEQ  Serial number for each USUBJID
 ce$CESEQ <- SetSEQ(ce, "USUBJID", "CESEQ")
-# sortkey列を削除
-ce <- ce[ , colnames(ce) != "sortkey"]
 
 # ####### DS #######
-ds <- common_dataset
+ds <- SetCommon_dataset(dataset)
 ds$DOMAIN <- "DS"
 ds$DSSEQ <- NA
-ds$DSTERM <- apply(dataset[ ,"死亡日"], 1, function(x) ifelse(x != "N/A", "DEATH", ifelse(x == "N/A", "COMPLETED", "OTHER")))
+ds$DSTERM <- apply(dataset[ ,"死亡日"], 1, function(x) ifelse(x != "N/A", "DEATH",
+                                                         ifelse(x == "N/A", "COMPLETED", "OTHER")))
 ds$DSDECOD <- ds$DSTERM
 ds$DSCAT <- "DISPOSITION EVENT"
 ds$DSSTDTC <- format(as.Date(as.numeric(as.vector(t(dataset$最終確認日))), origin="1899-12-30"))
 # Sort(asc) KEY=USUBJID,DSTERM,DSSTDTC
-ds$sortkey <- dataset$sortkey
-ds_sortlist <- order(ds$sortkey, ds$DSTERM, ds$DSSTDTC)
+ds_sortlist <- order(ds$USUBJID, ds$DSTERM, ds$DSSTDTC)
 ds <- ds[ds_sortlist, ]
 # Set DSSEQ  Serial number for each USUBJID
 ds$DSSEQ <- SetSEQ(ds, "USUBJID", "DSSEQ")
-# sortkey列を削除
-ds <- ds[ , colnames(ds) != "sortkey"]
 
 # ####### MH #######
-mh <- common_dataset
+mh <- SetCommon_dataset(dataset)
 mh$DOMAIN <- "MH"
 mh$MHSEQ <- NA
 mh$MHCAT <- "PRIMARY DIAGNOSIS"
@@ -157,7 +144,6 @@ mh$MHTERM <- NA
 mh$MHDECOD <- NA
 mh$MHSTDTC <- format(as.Date(as.numeric(as.vector(t(dataset[ ,kDiagnosisDate]))), origin="1899-12-30"))
 mh$MHPTCD <- NA
-mh$sortkey <- dataset$sortkey
 # ICD10
 mh$MHSCAT <- "ICD10"
 mh$MHPTCD <- "C92.0"
@@ -176,12 +162,10 @@ row.names(mh_2) <- NULL
 rm(mh)
 mh <- rbind(mh_1, mh_2)
 # Sort(asc) KEY=USUBJID, MHCAT
-mh_sortlist <- order(mh$sortkey, mh$MHCAT)
+mh_sortlist <- order(mh$USUBJID, mh$MHCAT)
 mh <- mh[mh_sortlist, ]
 # Set MHSEQ  Serial number for each USUBJID
 mh$MHSEQ <- SetSEQ(mh, "USUBJID", "MHSEQ")
-# sortkey列を削除
-mh <- mh[ , colnames(mh) != "sortkey"]
 
 # ####### SC #######
 # リスク分類こばが1,2,3のレコードのみ出力対象とする
@@ -189,30 +173,23 @@ sc_temp <- subset(dataset, dataset[  ,kRiskgroup] == 1)
 sc_temp <- rbind(sc_temp, subset(dataset, dataset[  ,kRiskgroup] == 2))
 sc_temp <- rbind(sc_temp, subset(dataset, dataset[  ,kRiskgroup] == 3))
 # 出力対象が絞られているので個別でセット
-sc <- data.frame(STUDYID = rep(kStudyId, nrow(sc_temp)))
+sc <-  SetCommon_dataset(sc_temp)
 sc$DOMAIN <- "SC"
-sc$USUBJID <- apply(sc_temp[ ,kAML05No], 1, function(x) paste(kStudyId, x, sep="-"))
 sc$SCSEQ <- NA
 sc$SCTESTCD <- "DEFRISK"
 sc$SCTEST <- "Definite Risk"
-# sc$SCORRES <- ifelse(as.vector(t(sc_temp[ ,kRiskgroup])) == 1,"LR",
-#                     ifelse(as.vector(t(sc_temp[ ,kRiskgroup])) == 2,"IR","HR"))
 sc$SCORRES <- apply(sc_temp[ ,kRiskgroup], 1, function(x) ifelse(x == 1, "LR", ifelse(x == 2, "IR", "HR")))
-
 sc$SCSTRESC <- sc$SCORRES
 sc$SCDTC <- NA
 # Sort(asc) KEY=USUBJID
-sc$sortkey <- sc_temp$sortkey
-sc_sortlist <- order(sc$sortkey)
+sc_sortlist <- order(sc$USUBJID)
 sc <- sc[sc_sortlist, ]
 # Set SCSEQ  Serial number for each USUBJID
 sc$SCSEQ <- SetSEQ(sc, "USUBJID", "SCSEQ")
-# sortkey列を削除
-sc <- sc[ , colnames(sc) != "sortkey"]
 
 # ####### RS #######
 # BMA-3判定日が日付扱いになるもののみ抽出対象とする
-rs <- common_dataset
+rs <- SetCommon_dataset(dataset)
 rs$DOMAIN <- "RS"
 rs$RSSEQ <- NA
 rs$RSTESTCD <- "INDCRESP"
@@ -222,7 +199,6 @@ rs$RSORRES <- ifelse(dataset[ ,kRemission] == 1, "CR",
                      ifelse(dataset[ ,kRemission] == 2, "NR", "NE"))
 
 rs$RSSTRESC <- rs$RSORRES
-rs$sortkey <- dataset$sortkey
 rs$RSDTC <- NA
 for (i in 1:nrow(dataset)) {
   # 0-9のみからなる文字列なら日付扱い、それ以外はNAにして行削除
@@ -232,12 +208,10 @@ for (i in 1:nrow(dataset)) {
 }
 rs <- subset(rs, !is.na(rs$RSDTC))
 # Sort(asc) KEY=USUBJID
-rs_sortlist <- order(rs$sortkey)
+rs_sortlist <- order(rs$USUBJID)
 rs <- rs[rs_sortlist, ]
 # Set RSSEQ  Serial number for each USUBJID
 rs$RSSEQ <- SetSEQ(rs, "USUBJID", "RSSEQ")
-# sortkey列を削除
-rs <- rs[ , colnames(rs) != "sortkey"]
 
 # Save datasets
 WriteCSV_SDTM("CP932", outputpath)
