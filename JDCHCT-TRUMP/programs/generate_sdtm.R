@@ -37,7 +37,6 @@ for (i in 1:nrow(dataset)) {
     dataset[i,"RFSTDTC"] <- format(wk_RFSTDTC)
     if (dataset[i,".Age"] != "NA") {
       # 小数点以下切り捨て
-      #      wk_Age <- floor(as.numeric(dataset[i,".Age"]) * 365.25)
       wk_Age <- YearsConvDays(dataset[i,".Age"])
       # 年齢は登録日時点、登録日から年齢分の日数を除して誕生日を算出
       wk_birth <- wk_RFSTDTC - wk_Age
@@ -133,9 +132,15 @@ mh$MHCAT <- "PRIMARY DIAGNOSIS"
 mh$MHSCAT <- NA
 mh$MHTERM <- NA
 mh$MHDECOD <- NA
+mh$MHSTDTC <- NA
 # 病名開始日 .age_dxは発症時年齢なので誕生日に年齢分の日数を加算して算出
-wk_age_dx <- YearsConvDays(dataset[i,"age_dx"])
-mh$MHSTDTC <- format(wk_birth + wk_age_dx)
+for (i in 1:nrow(dataset)){
+  if (dataset[i ,"age_dx"] != "NA" && dataset$BRTHDTC != "NA"){
+    wk_age_dx <- YearsConvDays(dataset[i ,"age_dx"])
+    wk_birth <- as.vector(t(dataset[i ,"BRTHDTC"]))
+    mh[i, "MHSTDTC"] <- format(as.Date(wk_birth) + wk_age_dx)
+  }
+}
 mh$MHPTCD <- NA
 # ICD10
 mh$MHSCAT <- "ICD10"
