@@ -66,3 +66,17 @@ WriteCSV_SDTM <- function(encode, outputpath=NA){
     setwd("../../..")
   }
 }
+
+#' SetCommon_dataset function
+#' ドメイン共通列の生成
+#'
+#' @param input_dataset
+#' @return Common_dataset
+#' @export
+SetCommon_dataset <- function(input_dataset){
+  # Common Columns
+  common_dataset <- data.frame(STUDYID = rep(kStudyId, nrow(input_dataset)))
+  common_dataset$DOMAIN <- NA
+  common_dataset$USUBJID <- input_dataset$USUBJID
+  return(common_dataset)
+}

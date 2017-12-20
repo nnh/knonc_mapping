@@ -22,14 +22,6 @@ DmArmcd <- function(dst_row){
   return(c(arm=wk_arm, armcd=wk_armcd))
 }
 
-SetCommon_dataset <- function(input_dataset){
-  # Common Columns
-  common_dataset <- data.frame(STUDYID = rep(kStudyId, nrow(input_dataset)))
-  common_dataset$DOMAIN <- NA
-  common_dataset$USUBJID <- input_dataset$USUBJID
-  return(common_dataset)
-}
-
 # readxlのインストールが必要
 # install.packages('readxl')
 library("readxl")
