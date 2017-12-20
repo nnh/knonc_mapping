@@ -11,20 +11,22 @@ YearsConvDays <- function(wk_years){
 # readxlのインストールが必要
 # install.packages('readxl')
 library("readxl")
-# common function
-source("./common_programs/common_fnk.R")
 # TimeZone取得エラー対応
 Sys.setenv(TZ="Asia/Tokyo")
 kStudyId <- "JDCHCT-TRUMP"
+# set path
+basepath <- "/Users/admin/Desktop/R/knonc_mapping"
+rawdatapath <- paste(basepath, kStudyId, "input/rawdata", sep="/")
+outputpath <- paste(basepath, kStudyId, "output/SDTM", sep="/")
+# common function
+common_function <- paste0(basepath, "/common_programs/common_fnk.R")
+source(common_function)
 # 基準日
 kToday <- as.Date("2017/11/25")
 
 # Load data
-setwd(kStudyId)
-setwd("./input/rawdata")
-filenames <- list.files()
+filenames <- list.files(rawdatapath, full.names=T)
 rawdata <- read_excel(filenames[1], sheet=2, col_names=T)
-setwd("../..")
 
 # Format dataset
 dataset <- rawdata[!is.na(rawdata[ ,"EGA_id"]), ]
@@ -44,14 +46,11 @@ for (i in 1:nrow(dataset)) {
     }
   }
 }
-# Common Columns
-comdst <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
-comdst$DOMAIN <- NA
-comdst$DOMAIN <- NA
-comdst$USUBJID <- apply(dataset[ ,"EGA_id"], 1, function(x) paste(kStudyId, x, sep="-"))
+# datasetにUSUBJIDをセット
+dataset$USUBJID <- apply(dataset[ ,"EGA_id"], 1, function(x) paste(kStudyId, x, sep="-"))
 
 # ####### DM #######
-dm <- comdst
+dm <- SetCommon_dataset(dataset)
 dm$DOMAIN <- "DM"
 dm$SUBJID <- as.vector(t(dataset[ ,"EGA_id"]))
 dm$RFSTDTC <- dataset$RFSTDTC
@@ -72,27 +71,23 @@ dm$RFICDTC <- NA
 # ####### PR #######
 # .DxToSCTが欠損でないレコードのみ出力対象とする
 pr_temp <- subset(dataset, .DxToSCT != "NA")
-# 出力対象が絞られているので個別でセット
-pr <- data.frame(STUDYID = rep(kStudyId, nrow(pr_temp)))
+pr <- SetCommon_dataset(pr_temp)
 pr$DOMAIN <- "PR"
-pr$USUBJID <- apply(pr_temp[ ,"EGA_id"], 1, function(x) paste(kStudyId, x, sep="-"))
 pr$PRSEQ <- NA
 pr$PRTRT <- "Hematopoietic Stem Cell Transplantation"
 pr$PRCAT <- "Allotransplantation"
 pr$PRSTDTC <- NA
 # Sort(asc) KEY=USUBJID
-prSortlist <- order(pr$USUBJID)
-pr <- pr[prSortlist, ]
+pr_sortlist <- order(pr$USUBJID)
+pr <- pr[pr_sortlist, ]
 # Set PRSEQ  Serial number for each USUBJID
 pr$PRSEQ <- SetSEQ(pr, "USUBJID", "PRSEQ")
 
 # ####### CE #######
 # .Relapse = 1のレコードのみ出力対象とする
 ce_temp <- subset(dataset, .Relapse == 1)
-# 出力対象が絞られているので個別でセット
-ce <- data.frame(STUDYID = rep(kStudyId, nrow(ce_temp)))
+ce <- SetCommon_dataset(ce_temp)
 ce$DOMAIN <- "CE"
-ce$USUBJID <- apply(ce_temp[ ,"EGA_id"], 1, function(x) paste(kStudyId, x, sep="-"))
 ce$CESEQ <- NA
 ce$CETERM <- "DISEASE RELAPSE"
 ce$CEDECOD <- ce$CETERM
@@ -104,13 +99,13 @@ for (i in 1:nrow(ce)) {
   }
 }
 # Sort(asc) KEY=USUBJID,CETERM,CEDTC
-ceSortlist <- order(ce$USUBJID, ce$CETERM, ce$CEDTC)
-ce <- ce[ceSortlist, ]
+ce_sortlist <- order(ce$USUBJID, ce$CETERM, ce$CEDTC)
+ce <- ce[ce_sortlist, ]
 # Set CESEQ  Serial number for each USUBJID
 ce$CESEQ <- SetSEQ(ce, "USUBJID", "CESEQ")
 
 # ####### DS #######
-ds <- comdst
+ds <- SetCommon_dataset(dataset)
 ds$DOMAIN <- "DS"
 ds$DSSEQ <- NA
 ds$DSTERM <- ifelse(dataset[ ,".OS"] == "0", "COMPLETED",
@@ -119,13 +114,13 @@ ds$DSDECOD <- ds$DSTERM
 ds$DSCAT <- "DISPOSITION EVENT"
 ds$DSSTDTC <- format(kToday)
 # Sort(asc) KEY=USUBJID,DSTERM,DSSTDTC
-dssortlist <- order(ds$USUBJID, ds$DSTERM, ds$DSSTDTC)
-ds <- ds[dssortlist, ]
+ds_sortlist <- order(ds$USUBJID, ds$DSTERM, ds$DSSTDTC)
+ds <- ds[ds_sortlist, ]
 # Set DSSEQ  Serial number for each USUBJID
 ds$DSSEQ <- SetSEQ(ds, "USUBJID", "DSSEQ")
 
 # ####### MH #######
-mh <- comdst
+mh <- SetCommon_dataset(dataset)
 mh$DOMAIN <- "MH"
 mh$MHSEQ <- NA
 mh$MHCAT <- "PRIMARY DIAGNOSIS"
@@ -157,13 +152,13 @@ mh_2 <- mh
 # merge
 mh <- rbind(mh_1, mh_2)
 # Sort(asc) KEY=USUBJID, MHCAT
-mhsortlist <- order(mh$USUBJID, mh$MHCAT)
-mh <- mh[mhsortlist, ]
+mh_sortlist <- order(mh$USUBJID, mh$MHCAT)
+mh <- mh[mh_sortlist, ]
 # Set MHSEQ  Serial number for each USUBJID
 mh$MHSEQ <- SetSEQ(mh, "USUBJID", "MHSEQ")
 
 # ####### SC #######
-sc <- comdst
+sc <- SetCommon_dataset(dataset)
 sc$DOMAIN <- "SC"
 sc$SCSEQ <- NA
 sc$SCTESTCD <- "IPSS"
@@ -174,11 +169,10 @@ sc$SCORRES[sc$SCORRES == "NA"] <- NA
 sc$SCSTRESC <- sc$SCORRES
 sc$SCDTC <- NA
 # Sort(asc) KEY=USUBJID
-scsortlist <- order(sc$USUBJID)
-sc <- sc[scsortlist, ]
+sc_sortlist <- order(sc$USUBJID)
+sc <- sc[sc_sortlist, ]
 # Set SCSEQ  Serial number for each USUBJID
 sc$SCSEQ <- SetSEQ(sc, "USUBJID", "SCSEQ")
 
 # Save datasets
-WriteCSV_SDTM("CP932")
-# WriteCSV_SDTM("UTF-8")
+WriteCSV_SDTM("CP932", outputpath)
