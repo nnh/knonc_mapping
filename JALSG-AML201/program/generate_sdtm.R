@@ -1,21 +1,26 @@
-# common function
-source("./common_programs/common_fnk.R")
 # TimeZone取得エラー対応
 Sys.setenv(TZ="Asia/Tokyo")
 kStudyId <- "JALSG-AML201"
+# set path
+basepath <- "/Users/admin/Desktop/R/knonc_mapping"
+rawdatapath <- paste(basepath, kStudyId, "input/rawdata", sep="/")
+outputpath <- paste(basepath, kStudyId, "output/SDTM", sep="/")
+# common function
+common_function <- paste0(basepath, "/common_programs/common_fnk.R")
+source(common_function)
 
 # Load data
-setwd(kStudyId)
-setwd("./input/rawdata")
-filenames <- list.files()
+filenames <- list.files(rawdatapath, full.names=T)
 rawdata <- read.csv(filenames[1], as.is = T, na.strings = c(""), fileEncoding = "CP932")
-setwd("../..")
 
 # Format data
 dataset <- rawdata[!is.na(rawdata$検体ID), ]
-dm <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
+# datasetにUSUBJIDをセット
+dataset$USUBJID <- sapply(dataset$検体ID, function(x){paste(kStudyId, x, sep="-")})
+
+# ####### DM #######
+dm <- SetCommon_dataset(dataset)
 dm$DOMAIN <- "DM"
-dm$USUBJID <- paste(kStudyId, dataset$検体ID, sep = "-")
 dm$SUBJID <- dataset$検体ID
 dm$RFSTDTC <- ISO8601Date(dataset$登録日)
 dm$BRTHDTC <- NA
@@ -37,39 +42,36 @@ dm$RFICDTC <- NA
 # ####### PR #######
 # 移植日が空白でないレコードのみ出力対象とする
 pr_temp <- subset(dataset, !is.na(移植日))
-pr <- data.frame(STUDYID = rep(kStudyId, nrow(pr_temp)))
+pr <- SetCommon_dataset(pr_temp)
 pr$DOMAIN <- "PR"
-pr$USUBJID <- paste(kStudyId, pr_temp$検体ID, sep = "-")
 pr$PRSEQ <- NA
 pr$PRTRT <- "Hematopoietic Stem Cell Transplantation"
 pr$PRCAT <- "Unknown"
-pr$PRSTDTC <- pr_temp$移植日
+pr$PRSTDTC <- ISO8601Date(pr_temp$移植日)
 # Sort(asc) KEY=USUBJID
-prSortlist <- order(pr$USUBJID)
-pr <- pr[prSortlist, ]
+pr_sortlist <- order(pr$USUBJID)
+pr <- pr[pr_sortlist, ]
 # Set SEQ  Serial number for each USUBJID
 pr$PRSEQ <- SetSEQ(pr, "USUBJID", "PRSEQ")
 
 # ####### CE #######
 # 再発の有無が"再発"のレコードのみ出力対象とする
 ce_temp <- subset(dataset, 再発の有無=="再発")
-ce <- data.frame(STUDYID = rep(kStudyId, nrow(ce_temp)))
+ce <- SetCommon_dataset(ce_temp)
 ce$DOMAIN <- "CE"
-ce$USUBJID <- paste(kStudyId, ce_temp$検体ID, sep = "-")
 ce$CESEQ <- NA
 ce$CETERM <- "DISEASE RELAPSE"
 ce$CEDECOD <- ce$CETERM
 ce$CEDTC <- ISO8601Date(ce_temp$再発日)
 # Sort(asc) KEY=USUBJID,CETERM,CEDTC
-ceSortlist <- order(ce$USUBJID, ce$CETERM, ce$CEDTC)
-ce <- ce[ceSortlist, ]
+ce_sortlist <- order(ce$USUBJID, ce$CETERM, ce$CEDTC)
+ce <- ce[ce_sortlist, ]
 # Set CESEQ  Serial number for each USUBJID
 ce$CESEQ <- SetSEQ(ce, "USUBJID", "CESEQ")
 
 # ####### DS #######
-ds <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
+ds <- SetCommon_dataset(dataset)
 ds$DOMAIN <- "DS"
-ds$USUBJID <- paste(kStudyId, dataset$検体ID, sep = "-")
 ds$DSSEQ <- NA
 ds$DSTERM <- ifelse(!is.na(dataset$最終生存確認日), "COMPLETED",
              ifelse(!is.na(dataset$死亡日), "DEATH",
@@ -81,15 +83,14 @@ wk.dsstdtc <- ifelse(!is.na(dataset$最終生存確認日), dataset$最終生存
                 dataset$最終予後日))
 ds$DSSTDTC <- ISO8601Date(wk.dsstdtc)  # ISO8601format
 # Sort(asc) KEY=USUBJID,DSTERM,DSSTDTC
-dssortlist <- order(ds$USUBJID, ds$DSTERM, ds$DSSTDTC)
-ds <- ds[dssortlist, ]
+ds_sortlist <- order(ds$USUBJID, ds$DSTERM, ds$DSSTDTC)
+ds <- ds[ds_sortlist, ]
 # Set DSSEQ  Serial number for each USUBJID
 ds$DSSEQ <- SetSEQ(ds, "USUBJID", "DSSEQ")
 
 # ####### MH #######
-mh <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
+mh <- SetCommon_dataset(dataset)
 mh$DOMAIN <- "MH"
-mh$USUBJID <- paste(kStudyId, dataset$検体ID, sep = "-")
 mh$MHSEQ <- NA
 mh$MHCAT <- "PRIMARY DIAGNOSIS"
 mh$MHSCAT <- NA
@@ -108,15 +109,14 @@ mh_2 <- mh
 # merge
 mh <- rbind(mh_1, mh_2)
 # Sort(asc) KEY=USUBJID, MHCAT
-mhsortlist <- order(mh$USUBJID, mh$MHCAT)
-mh <- mh[mhsortlist, ]
+mh_sortlist <- order(mh$USUBJID, mh$MHCAT)
+mh <- mh[mh_sortlist, ]
 # Set MHSEQ  Serial number for each USUBJID
 mh$MHSEQ <- SetSEQ(mh, "USUBJID", "MHSEQ")
 
 # ####### RS #######
-rs <- data.frame(STUDYID = rep(kStudyId, nrow(dataset)))
+rs <- SetCommon_dataset(dataset)
 rs$DOMAIN <- "RS"
-rs$USUBJID <- paste(kStudyId, dataset$検体ID, sep = "-")
 rs$RSSEQ <- NA
 rs$RSTESTCD <- "INDCRESP"
 rs$RSTEST <- "Induction Response"
@@ -126,17 +126,10 @@ rs$RSORRES <- ifelse(dataset$CR == "CR", "CR",
 rs$RSSTRESC <- rs$RSORRES
 rs$RSDTC <- ISO8601Date(dataset$寛解到達日)
 # Sort(asc) KEY=USUBJID
-rssortlist <- order(rs$USUBJID)
-rs <- rs[rssortlist, ]
+rs_sortlist <- order(rs$USUBJID)
+rs <- rs[rs_sortlist, ]
 # Set RSSEQ  Serial number for each USUBJID
 rs$RSSEQ <- SetSEQ(rs, "USUBJID", "RSSEQ")
 
 # Save datasets
-setwd("./output/SDTM")
-write.csv(dm, "dm.csv", row.names = F, na = "")
-write.csv(pr, "pr.csv", row.names = F, na = "")
-write.csv(ce, "ce.csv", row.names = F, na = "")
-write.csv(ds, "ds.csv", row.names = F, na = "")
-write.csv(mh, "mh.csv", row.names = F, na = "")
-write.csv(rs, "rs.csv", row.names = F, na = "")
-setwd("../../..")
+WriteCSV_SDTM("CP932", outputpath)
